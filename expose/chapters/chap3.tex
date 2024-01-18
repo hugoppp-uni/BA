@@ -315,7 +315,7 @@ insbesondere im Druck, fast immer zu suboptimalen Ergebnissen.  Das wird etwas
 \begin{figure}[!ht]
   % Zentrieren der Abbildung
   \centering
-  \includegraphics[width=.8\textwidth]{bitmap}
+  \includegraphics[width=.8\textwidth]{images/bitmap}
   % Beschriftung der Abbildung; in eckigen Klammern der Titel für das
   % Abbildungsverzeichnis
   \caption[Schlecht: Rastergrafik]{Ganz schlechtes Beispiel! (Quelle: \cite[S. 184]{weitz})}
@@ -335,7 +335,7 @@ kann.)
   \centering
   % es wird nur ein Ausschnitt des Originals eingetzt; die Reihenfolge der
   % vier Werte ist: left bottom right top
-  \includegraphics[width=.8\textwidth,trim={0mm 4mm 0mm 4mm},clip]{vector}
+  \includegraphics[width=.8\textwidth,trim={0mm 4mm 0mm 4mm},clip]{images/vector}
   \caption[Besser, aber noch nicht gut: Vektorgrafik]{Besser, aber nicht optimal (Quelle: \cite[S. 184]{weitz})}
   \label{fig-better}
 \end{figure}
@@ -454,12 +454,12 @@ verwendet.
 % externen Datei euler.py gelesen wird
 \lstinputlisting[
 % das Paket "kennt" viele gängige Programmiersprachen
-    language=Python,
+  language=Python,
 % Beschriftung
-    caption=Eulersches Polygonzugverfahren,
+  caption=Eulersches Polygonzugverfahren,
 % frei wählbarer Name für \ref
-    label=euler
-]{euler.py}
+  label=euler
+]{code/euler.py}
 
 In der Datei \texttt{chap3.tex} kann man sehen, wie der Code aus einer
 externen Datei eingelesen wird.  Durch diese Vorgehensweise kann man dafür
