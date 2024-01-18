@@ -1,0 +1,29 @@
+% Dies ist die Hauptdatei, von der aus das Gesamtdokument erzeugt wird.  Diese
+% Datei sollten Sie zunächst umbenennen, damit sie keinen generischen Namen
+% hat!  Dann wird sie mit LuaLaTeX kompiliert.
+
+% In der Datei defs.tex werden alle globalen LaTeX-spezifischen Einstellungen
+% vorgenommen
+\input{defs}
+
+% Wenn das Kommentarzeichen entfernt wird, kann man mit einem Befehl wie
+%
+% \includeonly{chap2,chap3}
+%
+% erreichen, dass nur ausgewählte Dateien kompiliert werden.  Das ist für die
+% Arbeit an umfangreichen Dokumenten hilfreich, weil es Zeit spart.  Für das
+% Erstellen des fertigen Dokuments muss der Befehl natürlich wieder
+% auskommentiert werden, damit alle Referenzen aktuell sind und die
+% Seitenzahlen stimmen.
+
+% Hier beginnt das eigentliche Dokument.  Sie können weitere Dateien
+% hinzufügen und natürlich auch vorhandene weglassen.  Die vorhandene
+% Dateistruktur ist lediglich als Beispiel gedacht.
+\begin{document}
+\include{title}
+\include{toc}
+\include{chap1}
+\include{chap2}
+\include{chap3}
+\include{appendix}
+\end{document}
