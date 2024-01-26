@@ -3,6 +3,22 @@
 % Kapitel (\chapter) anfangen.
 
 \chapter{Introduction}
+Object detection and classification are fundamental problems of both Augmented Reality (AR) and computer vision for robotics.
+This thesis will focus on detecting geometric primitives like cubes, spheres, and cylinders in three-dimensional data acquired from mobile devices lacking specialized depth-sensing hardware.
 
-Basic description of AR
 
+\section{Research Aims and Questions}
+
+The precise research question for the thesis is still to be decided.
+The following questions are under consideration:
+\begin{enumerate}
+    \item What is the nature of the objects to be detected? Should the items be geometric primitives themselves, or should more complex items be approximated using geometric primitives?
+    \item How should the selection of objects for tracking be determined? Should the algorithm autonomously identify the most suitable approximation, or should the process be guided by user interaction, such as selecting an object on the screen to initiate detection?
+    \item Should the objects be tracked? If yes, under which conditions? Should tracking occur:
+    \begin{enumerate}
+        \item while the device is in motion,
+        \item while the object itself is in motion, or
+        \item under a combination of both conditions?
+    \end{enumerate}
+    \item Should the detection be reevaluated as new data arrives?
+\end{enumerate}

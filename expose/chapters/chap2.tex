@@ -35,17 +35,27 @@ Googles documentation~\parencite{arcore-doc-depth} summarizes the features of th
 
 The device used for development (Google Pixel 7) is not equipped with a depth sensor, thus the Depth API will solely rely on cameras depth-from-motion to generate depth information.
 The inherent pitfall of camera based depth-from-motion is that tracking objects with little to no texture like walls will not yield good result.
-This might create additional challenges or limitations for the implementation.
+This might pose challenges, depending on the specific use case to be examined in the thesis.
+If, for example, objects like boxes or spheres with little to no texture are to be recognized,
+the depth API might not return sufficiently accurate depth information to correctly recognize them.
 
-The Depth API provides the two APIs, as described by~\cite{arcore-doc-raw-depth}:
+\subsubsection{API Details}
+The Depth API provides the two APIs, as described by \citetitle{arcore-doc-raw-depth}~\parencite{arcore-doc-raw-depth}:
 \begin{enumerate}
     \item The Raw Depth API provides "raw depth images that contain a very accurate depth estimate for some, but not all, pixels in the camera image."
     It also provides a "confidence image that gives the confidence for every raw depth images pixel".
     \item The Full Depth API provides a "single 'smoothed' depth image that contains a depth estimate for every pixel."
 \end{enumerate}
 
+Example images of the two APIs can be seen in figure~\ref{fig:depth-api-images}
+
 The Raw Depth API seems to be the better choice for the use case of analyzing 3D data, as it provides more accurate data.
 The choice between the APIs needs to be investigated further for the final implementation.
+
+\subsubsection{Calculating 3D Point Cloud based on Depth Images}
+As the Depth API returns depth images and not point clouds, every pixel needs to be projected into 3D space using the camera intrinsics.
+The~\citetitle[p. 5]{arcore-codelab-rawdepth} provides an example implementation called \textit{convertRawDepthImagesTo3dPointBuffer} that solves this problem.
+
 
 
 \begin{figure}[ht!]
@@ -81,10 +91,9 @@ The choice between the APIs needs to be investigated further for the final imple
     \label{fig:depth-api-images}
 \end{figure}
 
-
 \subsection{Confirming Compatibility with Device}
 
-The quickstart section of the documentation of the ARCore Depth API \parencite{arcore-depth-quickstart} provides a sample application named \texttt{hello\_ar\_kotlin}.
+The quickstart section of the documentation of the \citetitle{arcore-depth-quickstart}~\parencite{arcore-depth-quickstart} provides a sample application named \texttt{hello\_ar\_kotlin}.
 The \texttt{hello\_ar\_kotlin} application has been confirmed to run on the hardware mentioned in section~\ref{sec:overview}.
 Screenshots of the running sample application can be seen in figure~\ref{fig:hello_world_screenshot}.
 
