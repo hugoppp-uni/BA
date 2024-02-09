@@ -1,10 +1,34 @@
-\chapter{Areas of Research}
+\chapter*{Possible Approach}
 
 
-\section{Augemented Reality}
+\section*{Hard- and Softwarestack}
+
+The mobile application will be developed for Android and tested using a Google Pixel 7.
+The implementation will be carried out in Java/Kotlin using the Android Studio integrated development environment (IDE).
+The Google ARCore SDK will be used to access depth information about a scene.
+The SDK is available by default -- no additional libraries are required.
+
+Algorithms will be implemented in C\texttt{++} in the \texttt{procedural-augmented-reality} project provided by Prof. Dr. Phillipp Jenke.
+This project will be integrated into the application and interfaced with Kotlin through a binding layer.
 
 
-\section{Surface reconstruction / Primitive Extraction}
+\section*{Approach Outline}
+The ARCore Raw Depth API provides depth images with corresponding confidence images and RGB images~\parencite{google_llc_arcore_doc}.
+These images also allow for the creation of a point cloud by projecting each pixel into three-dimensional space, utilizing the camera's intrinsics~\parencite{google_llc_codelab_raw_depth}.
 
+The obtained data (RGB Images, Depth Images, Point Clouds) can serve as the foundation for detecting geometric primitives.
+Various algorithms suitable for this task are compared in ~\parencite{kaiser_survey_2019}.
+For instance, an algorithm based on RANSAC like~\parencite{schnabel_efficient_2007}
+can utilize the point cloud to identify geometric primitives.
+Additionally, the confidence images from the Raw Depth API can be employed to improve the detection outcomes.
 
-\section{Object detection}
+\section*{Potential pitfalls}
+As the development device, Google Pixel 7, does not have a depth sensor,
+the Depth API will exclusively utilize depth-from-motion techniques to derive depth information from camera images.
+However, it is important to note that camera-based depth-from-motion has limitations
+when it comes to detecting depth in objects with minimal texture, such as walls.
+This drawback could potentially present challenges.
+For instance, if the objective were to recognize objects like boxes or spheres that lack texture,
+the accuracy of depth information obtained from the Depth API may not be sufficient for accurate recognition.
+\parencite{google_llc_arcore_doc}
+
