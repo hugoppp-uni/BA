@@ -1,0 +1,36 @@
+\chapter{Solution Overview}
+\section{Requirements and Constraints}
+
+\paragraph{Accuracy might vary based on many variables}
+
+\begin{enumerate}
+    \item Object texture
+    \item Distance
+    \item Lighting conditions
+\end{enumerate}
+
+\paragraph{Near-real-time (once every 10s or so)}
+
+\paragraph{Limited processing power (smartphone)}
+
+
+\section{Potential pitfalls}
+As the development device, Google Pixel 7, does not have a depth sensor,
+the Depth API will exclusively utilize depth-from-motion techniques to derive depth information from camera images.
+However, it is important to note that camera-based depth-from-motion has limitations
+when it comes to detecting depth in objects with minimal texture, such as walls.
+This drawback could potentially present challenges.
+For instance, if the objective were to recognize objects like boxes or spheres that lack texture,
+the accuracy of depth information obtained from the Depth API may not be sufficient for accurate recognition. \parencite{google_llc_arcore_doc}
+
+\section{Hard- and Softwarestack}
+
+The mobile application will be developed for Android and tested using a Google Pixel 7.
+The implementation will be carried out in Java/Kotlin using the Android Studio integrated development environment (IDE).
+The Google ARCore SDK will be used to access depth information about a scene.
+The SDK is available by default -- no additional libraries are required.
+
+Algorithms will be implemented in C\texttt{++} in the \texttt{procedural-augmented-reality} project provided by Prof. Dr. Phillipp Jenke.
+This project will be integrated into the application and interfaced with Kotlin through a binding layer.
+
+

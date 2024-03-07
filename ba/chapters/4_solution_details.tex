@@ -1,0 +1,65 @@
+\chapter{Solution Details}
+
+The ARCore Raw Depth API provides depth images with corresponding confidence images and RGB images~\parencite{google_llc_arcore_doc}.
+These images also allow for the creation of a point cloud by projecting each pixel into three-dimensional space, utilizing the camera's intrinsics~\parencite{google_llc_codelab_raw_depth}.
+
+The obtained data (RGB Images, Depth Images, Point Clouds) can serve as the foundation for detecting geometric primitives.
+Various algorithms suitable for this task are compared in ~\parencite{kaiser_survey_2019}.
+For instance, an algorithm based on RANSAC like~\parencite{schnabel_efficient_2007}
+can utilize the point cloud to identify geometric primitives.
+Additionally, the confidence images from the Raw Depth API can be employed to improve the detection outcomes.
+
+
+\section{Capturing Depth Images}
+
+\subsection{ARCore Raw Depth API Overview}
+
+\subsection{Depth from Motion inner workings}
+[Valentin et al., 2018](zotero://select/library/items/GFGH43VD)
+
+
+\section{Building the point cloud (PC)}
+
+\subsection{Filtering low confidence points}
+
+\subsection{Transforming Depth Image Pixels to World Coordinate Points}
+
+\subsection{Updating the PC once new data arrives}
+
+\subsubsection{Octree?}
+
+
+\section{Algorithm to choose}
+
+\subsection{Categorization}
+
+\subsubsection{Stochastic (RANSAC)}
+
+\subsubsection{Parameter Space (Hough Transform)}
+
+\subsubsection{Region Growing (Primitive Growing)}
+
+\subsection{Hough Transform vs RANSAC}
+
+
+\section{Applying the Algorithm}
+
+\subsection{Filtering walls and floor}
+
+\subsection{Detailed Explanation of the RANSAC Implementation}
+\parencite{schnabel_efficient_2007}
+
+
+\section{Rendering the primitives}
+
+\subsection{Preparing the data on the CPU}
+
+\subsubsection{Restraining the primitives}
+
+\paragraph{Cross-section => Floor and Walls}
+
+\paragraph{Using a bounding box / extend of points}
+
+\subsubsection{Building a mesh}
+
+\subsection{Rendering on the GPU (shaders)}

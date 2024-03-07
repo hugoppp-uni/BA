@@ -1,1 +1,3 @@
-/expose/out
+out/
+.idea/
+auxil/
