@@ -1,52 +1,126 @@
 \chapter{Solution Details}
 
-The ARCore Raw Depth API provides depth images with corresponding confidence images and RGB images~\parencite{google_llc_arcore_doc}.
-These images also allow for the creation of a point cloud by projecting each pixel into three-dimensional space, utilizing the camera's intrinsics~\parencite{google_llc_codelab_raw_depth}.
-
-The obtained data (RGB Images, Depth Images, Point Clouds) can serve as the foundation for detecting geometric primitives.
-Various algorithms suitable for this task are compared in ~\parencite{kaiser_survey_2019}.
-For instance, an algorithm based on RANSAC like~\parencite{schnabel_efficient_2007}
-can utilize the point cloud to identify geometric primitives.
-Additionally, the confidence images from the Raw Depth API can be employed to improve the detection outcomes.
+Depth information is collected using the ARCore Raw Depth API via depth images and confidence images.
+Low confidence points under a certain threshold are filtered out.
+Each pixel of the depth image is then projected into three-dimensional world-space, utilizing the camera's intrinsics.
+An octree is then use to remove duplicate points as new data arrives, and to quantize the points cloud.
+The RANSAC algorithm is then applied to the point cloud to detect geometric primitives.
 
 
 \section{Capturing Depth Images}
 
-\subsection{ARCore Raw Depth API Overview}
+\subsection{Depth from Motion}
+Depth from motion is a technique that estimates depth information from a sequence of images~\parencite{valentin_depth_2018}.
 
-\subsection{Depth from Motion inner workings}
-[Valentin et al., 2018](zotero://select/library/items/GFGH43VD)
+"Depth data becomes available when the user moves their device. The algorithm can get robust, accurate depth estimates from 0 to 65 meters away. The most accurate results come when the device is half a meter to about five meters away from the real-world scene. Experiences that encourage the user to move their device more will get better and better results."
+\parencite{google_llc_arcore_doc}
 
+\subsection{ARCore Depth APIs}
+Google ARCore provides two APIs to access depth information: the Depth API and the Raw Depth API\@.
+Both APIs provide depth information for a given frame of a camera image using depth images, but they differ in the level of detail they provide~\parencite{google_llc_arcore_doc}:
+
+The Raw Depth API provides depth images and confidence images, where some pixels may not have any depth information.
+The depth image provides the distance from the camera of a given pixel in millimeters.
+The confidence image indicates the reliability of the depth information for each pixel, ranging from 0 (no confidence) to 255 (high confidence).
+
+In contract, the Depth API provides a single depth image, where each pixel has a depth value.
+To achieve this, values for pixels without depth information are interpolated.
+No confidence image is provided.
+
+\begin{figure}[ht!]
+    \centering
+    % First row
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/depth_full-depth-image}
+        \caption{Full Depth API depth image}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/depth_camera-image}
+        \caption{Camera image}
+    \end{subfigure}%
+
+    % Optional: Adjust or remove vertical spacing between the rows
+    \vspace{0.5em}
+
+    % Second row
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/depth_raw-depth-image}
+        \caption{Raw Depth API depth image}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.8\linewidth]{images/depth_raw-depth-confidence-image}
+        \caption{Raw Depth API confidence image}
+    \end{subfigure}%
+
+    \caption{Full Depth vs. Raw Depth}
+    \label{fig:depth-api-images}
+\end{figure}
+
+
+The Depth API is preferred in cases where it is crucial to have a depth value for every pixel, such as calculating if an object should be occluded by the scene in an AR application,
+while the Raw depth API is preferred if accuracy of the depth information is crucial. \parencite{google_llc_arcore_doc}
+As accuracy is crucial for primitive detection and depth information for every pixel is not required, the Raw Depth API is used in this project.
 
 \section{Building the point cloud (PC)}
+As RANSAC is a point-based algorithm, we first need to convert the depth image to a point cloud.
+The process consists of three steps.
+\begin{enumerate}
+    \item Filtering low confidence points
+    \item Transforming depth image pixels to world coordinate points
+    \item Inserting new points into the point cloud
+\end{enumerate}
 
 \subsection{Filtering low confidence points}
+The confidence image provided by the Raw Depth API can be used to filter out points with low confidence.
+A threshold value is set, below which points are discarded.
 
-\subsection{Transforming Depth Image Pixels to World Coordinate Points}
+\subsection{Transforming depth image pixels to world coordinate points}
 
-\subsection{Updating the PC once new data arrives}
+\subsection{Inserting new points into the point cloud}
 
-\subsubsection{Octree?}
+The last step is to add new points to the point cloud.
+As new depth images are captured every frame, we can not simply store a list of all points to append the new data to.
+This would lead to a massive amount of points that represent the same point in space, with slightly different depth values.
+To circumvent this, we can use a data structure that allows us to partition the space into smaller regions, and only store one point per region.
+A simple approach would utilize a grid, where each cell represents a region in space, while a more sophisticated approach
+would use a spatial data structure like an octree to improve performance.
+
+\subsubsection{Octree}
+An octree is a tree data structure where each node has exactly eight children.
+The tree is used to sparsely partition three-dimensional space into smaller regions and allows for efficient traversal in logarithmic time.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.75\textwidth]{images/octree}
+    \caption{Octree}
+    \label{fig:octrree}
+\end{figure}
+
+There are generally two approaches to utilize an octree for point cloud storage.
+
+One approach is to store the points and their data in the leaf nodes of the octree.
+Each node of the octree saves the coordinate of the point and its confidence value.
+When inserting a new point with a certain confidence, value a range query with a radius calculated from the confidence value
+is performed to find all nodes within a certain distance of the point to be inserted.
+If no node is found, a new leaf node is created and the point is inserted.
+If a node is found with a lower confidence value, the new point is inserted and the old node is removed.
+If a node is found with a higher confidence value, the new point is not inserted and discarded.
+
+A different approach is to use an octree with a fixed depth, where each leaf represents a region in space.
+The center coordinate of the leaf node can be inferred as the point in space, thus saving the coordinates of the point explicitly is not required.
+To find the coordinates of a given node, the tree needs to be traversed while keeping track of the extent and center coordinate of the current node.
+To prevent noise, confidence values can be stored to replace lower confidence values with higher ones, similar to the first approach.
+Using the second approach will also result in quantization of the point cloud.
+
+As the RANSAC algorithm works best with point clouds that have a uniform distribution of points, the second approach is preferred.
 
 
-\section{Algorithm to choose}
+\section{Detecting Primitives using RANSAC}
 
-\subsection{Categorization}
-
-\subsubsection{Stochastic (RANSAC)}
-
-\subsubsection{Parameter Space (Hough Transform)}
-
-\subsubsection{Region Growing (Primitive Growing)}
-
-\subsection{Hough Transform vs RANSAC}
-
-
-\section{Applying the Algorithm}
-
-\subsection{Filtering walls and floor}
-
-\subsection{Detailed Explanation of the RANSAC Implementation}
 \parencite{schnabel_efficient_2007}
 
 

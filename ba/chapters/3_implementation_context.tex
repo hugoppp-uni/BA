@@ -1,4 +1,5 @@
-\chapter{Solution Overview}
+\chapter{Implementation Context}
+
 \section{Requirements and Constraints}
 
 \paragraph{Accuracy might vary based on many variables}
@@ -32,5 +33,9 @@ The SDK is available by default -- no additional libraries are required.
 
 Algorithms will be implemented in C\texttt{++} in the \texttt{procedural-augmented-reality} project provided by Prof. Dr. Phillipp Jenke.
 This project will be integrated into the application and interfaced with Kotlin through a binding layer.
+
+\section{Libraries and external code}
+\parencite{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API.
+It is used as a basis for converting depth images to point clouds in this project.
 
 
