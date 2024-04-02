@@ -91,7 +91,10 @@ would use a spatial data structure like an octree to improve performance.
 
 \subsubsection{Octree}
 An octree is a tree data structure where each node has exactly eight children.
-The tree is used to sparsely partition three-dimensional space into smaller regions and allows for efficient traversal in logarithmic time.
+The tree can be used to sparsely partition three-dimensional space into smaller cubes and allows for efficient
+insertion and traversal in logarithmic time.
+"For the definition a simple recursive splitting of [cubes] is continued until there is only one point in a [cube]."
+\parencite{gabriel_zachmann_geometric_2002}
 
 \begin{figure}[h]
     \centering
@@ -100,23 +103,34 @@ The tree is used to sparsely partition three-dimensional space into smaller regi
     \label{fig:octrree}
 \end{figure}
 
-There are generally two approaches to utilize an octree for point cloud storage.
-
-One approach is to store the points and their data in the leaf nodes of the octree.
-Each node of the octree saves the coordinate of the point and its confidence value.
-When inserting a new point with a certain confidence, value a range query with a radius calculated from the confidence value
+To utilize an octree for point cloud storage, the point coordinates and its data is saved in the leaf nodes of the octree.
+In this case, each node of the octree saves the coordinate of the point and its confidence value.
+When inserting a new point with a certain confidence value, a range query with a radius calculated from the confidence value
 is performed to find all nodes within a certain distance of the point to be inserted.
 If no node is found, a new leaf node is created and the point is inserted.
 If a node is found with a lower confidence value, the new point is inserted and the old node is removed.
 If a node is found with a higher confidence value, the new point is not inserted and discarded.
+Using this approach, duplicate points are removed and adjusting the multiplier for the radius of the range query
+allows for fine-tuning of the threshold under which points are considered duplicates.
 
-A different approach is to use an octree with a fixed depth, where each leaf represents a region in space.
-The center coordinate of the leaf node can be inferred as the point in space, thus saving the coordinates of the point explicitly is not required.
-To find the coordinates of a given node, the tree needs to be traversed while keeping track of the extent and center coordinate of the current node.
-To prevent noise, confidence values can be stored to replace lower confidence values with higher ones, similar to the first approach.
-Using the second approach will also result in quantization of the point cloud.
+A different approach is to use a variation of the octree with a fixed depth.
+Points are always inserted at the defined depth of the tree, creating all nodes up to that depth if they do not yet exist.
+The center coordinate of the leaf node can then be inferred as the point in space,
+thus saving the coordinates of the point explicitly is not required.
+Instead, to find the coordinates of a given node, the tree needs to be traversed while keeping track of
+the extent and center coordinate of the current node.
+This approach will naturally provide quantization of the point cloud, with the resolution of the point cloud
+determined by the depth of the octree and extend of the root node.
+Using this approach, duplicate points are removed and adjusting the resolution of the octree
+allows for fine-tuning of the threshold distance between points under which points are considered duplicates.
+
+One disadvantage of the latter approach is that the confidence value of the points are not considered,
+thus a higher threshold for filtering out low confidence points is required.
+This can be mitigated by extending the second approach by a technique similar to the first approach,
+where the confidence value is stored with the point and a range query is performed to replace lower confidence values.
 
 As the RANSAC algorithm works best with point clouds that have a uniform distribution of points, the second approach is preferred.
+%todo
 
 
 \section{Detecting Primitives using RANSAC}

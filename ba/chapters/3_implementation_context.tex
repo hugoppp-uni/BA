@@ -1,5 +1,6 @@
 \chapter{Implementation Context}
 
+
 \section{Requirements and Constraints}
 
 \paragraph{Accuracy might vary based on many variables}
@@ -24,6 +25,7 @@ This drawback could potentially present challenges.
 For instance, if the objective were to recognize objects like boxes or spheres that lack texture,
 the accuracy of depth information obtained from the Depth API may not be sufficient for accurate recognition. \parencite{google_llc_arcore_doc}
 
+
 \section{Hard- and Softwarestack}
 
 The mobile application will be developed for Android and tested using a Google Pixel 7.
@@ -33,6 +35,11 @@ The SDK is available by default -- no additional libraries are required.
 
 Algorithms will be implemented in C\texttt{++} in the \texttt{procedural-augmented-reality} project provided by Prof. Dr. Phillipp Jenke.
 This project will be integrated into the application and interfaced with Kotlin through a binding layer.
+
+\subsection{Wrapping C\texttt{++} code in Kotlin using SWIG}
+SWIG is "a program development tool that automatically generates the bindings between C/C\texttt{++}
+code and common scripting languages"~\parencite{beazley_swig_1996}.
+
 
 \section{Libraries and external code}
 \parencite{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API.
