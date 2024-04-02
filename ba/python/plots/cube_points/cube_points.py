@@ -3,7 +3,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-from plots import plot_cloud
+from ba.python.plots import plot_cloud
 
 
 def generate_cube_points(edge_length, num_points_per_edge):
@@ -63,19 +63,20 @@ def generate_point_cloud(filename, noise_level=0.0, num_points_per_edge=100, edg
     ])
 
 
-def plot(filename):
+def plot_noise(filename):
     def formatter(ax: Axes3D, fig: plt.Figure):
-        fig.text(0.5, 0.015, f'Noise level {noise_level}', horizontalalignment="center")
+        # fig.text(0.5, 0.015, f'Noise level {noise_level}', horizontalalignment="center")
         ax.view_init(10, -90 - 45)
 
     plot_cloud.plot_ply(filename, formatter,
                         points_transform=lambda points: points + [0.5, 0.5, 0.5])
 
 
-num_points_per_edge = 100
-noise_level = 0.04  # standard deviation
+if __name__ == '__main__':
+    num_points_per_edge = 100
+    noise_level = 0.04  # standard deviation
 
-for noise_level in np.arange(0, 0.06, 0.01):
-    filename = f"data/cube_points_{'{:.2f}'.format(noise_level).replace('0.', '')}.ply"
-    # generate_point_cloud(filename, noise_level)
-    plot(filename)
+    for noise_level in np.arange(0, 0.06, 0.01):
+        filename = f"data/cube_points_noise_{'{:.2f}'.format(noise_level).replace('0.', '')}.ply"
+        # generate_point_cloud(filename, noise_level)
+        plot_noise(filename)

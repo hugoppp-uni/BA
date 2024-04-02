@@ -12,7 +12,8 @@ This would equate to a cube with a side length of 1m and a distance of 1cm betwe
 which is comparable to what is provided by the Raw Depth API\@.
 
 \subsubsection{Resilience to Noise}
-In figure~\ref{fig:test-synthetic-data}, the unit cube is shown with varying noise levels.
+In figure~\ref{fig:test-synthetic-data}, the unit cube is shown with varying noise levels using gaussian noise.
+The noise level is defined as the standard deviation of the noise added to the points.
 
 
 \begin{figure}[ht!]
@@ -20,19 +21,19 @@ In figure~\ref{fig:test-synthetic-data}, the unit cube is shown with varying noi
     % First row
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_00}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_00}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_01}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_01}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_02}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_02}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_03}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_03}
     \end{subfigure}%
 
 %    \vspace{0.5em}
