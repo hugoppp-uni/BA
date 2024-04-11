@@ -23,7 +23,7 @@ The Raw Depth API provides depth images and confidence images, where some pixels
 The depth image provides the distance from the camera of a given pixel in millimeters.
 The confidence image indicates the reliability of the depth information for each pixel, ranging from 0 (no confidence) to 255 (high confidence).
 
-In contract, the Depth API provides a single depth image, where each pixel has a depth value.
+In contrast, the Depth API provides a single depth image, where each pixel has a depth value.
 To achieve this, values for pixels without depth information are interpolated.
 No confidence image is provided.
 
@@ -79,6 +79,46 @@ The confidence image provided by the Raw Depth API can be used to filter out poi
 A threshold value is set, below which points are discarded.
 
 \subsection{Transforming depth image pixels to world coordinate points}
+To convert the point into world coordinates, first the camera intrinsics are used to
+project the point into camera space.
+Then, the model matrix is used to transform the point into world space.
+\parencite{google_llc_codelab_raw_depth,google_llc_arcore_doc}
+
+These transformations can be seen as analog to the transformations needed to
+render an object in world space onto the screen, as described in section~\ref{sec:rendering-the-primitives}.
+In this case, the transformation is applied backwards, i.e.\ in the opposite direction of the arrows
+in the figure~\ref{fig:coordinate-systems}, starting from clip space (4) to view space (3) to world space (2).
+
+
+%"Given point $A$ on the observed real-world geometry and a 2D point a representing the same point in the depth image,
+%the value given by the Depth API at a is equal to the length of $CA$ projected onto the principal axis.
+%This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$." \parencite{google_llc_arcore_doc}
+%\begin{figure}[h]
+%    \centering
+%    \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
+%    \caption{}
+%    \label{fig:}
+%\end{figure}
+%%codeblock with the formula
+%\begin{lstlisting}[language=Java]
+%float fx =
+%  cameraTextureIntrinsics.getFocalLength()[0] * depthWidth / intrinsicsDimensions[0];
+%float fy =
+%  cameraTextureIntrinsics.getFocalLength()[1] * depthHeight / intrinsicsDimensions[1];
+%float cx =
+%  cameraTextureIntrinsics.getPrincipalPoint()[0] * depthWidth / intrinsicsDimensions[0];
+%float cy =
+%  cameraTextureIntrinsics.getPrincipalPoint()[1] * depthHeight / intrinsicsDimensions[1];
+%pointCamera[0] = depthMeters * (x - cx) / fx;
+%pointCamera[1] = depthMeters * (cy - y) / fy;
+%pointCamera[2] = -depthMeters;
+%pointCamera[3] = 1;
+%\end{lstlisting}
+
+%This results in a point in camera space,
+%which can then be transformed into world space by multiplying it with the model matrix.
+
+
 
 \subsection{Inserting new points into the point cloud}
 
@@ -129,8 +169,7 @@ thus a higher threshold for filtering out low confidence points is required.
 This can be mitigated by extending the second approach by a technique similar to the first approach,
 where the confidence value is stored with the point and a range query is performed to replace lower confidence values.
 
-As the RANSAC algorithm works best with point clouds that have a uniform distribution of points, the second approach is preferred.
-%todo
+The performance of the RANSAC algorithm with both approaches will be evaluated in chapter~\ref{subsec:eval-point-clouds}.
 
 
 \section{Detecting Primitives using RANSAC}
@@ -138,7 +177,16 @@ As the RANSAC algorithm works best with point clouds that have a uniform distrib
 \parencite{schnabel_efficient_2007}
 
 
-\section{Rendering the primitives}
+\section{Rendering the primitives}\label{sec:rendering-the-primitives}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/coordinate_systems}
+    \caption{Coordinate systems}
+    \label{fig:coordinate-systems}
+\end{figure}
+
+\parencite{de_vries_learn_2020}
 
 \subsection{Preparing the data on the CPU}
 
