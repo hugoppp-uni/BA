@@ -17,47 +17,54 @@ which is comparable to what is provided by the Raw Depth API\@.
 In figure~\ref{fig:test-noise}, the unit cube is shown with varying noise levels using gaussian noise.
 The noise level is defined as the standard deviation of the noise added to the points.
 
+With a noise level of 0.01, the cube is perfectly reconstructed.
+Increasing the noise level to 0.02, the cube is still recognized mostly correctly.
+Starting from noise level to 0.03, the default parameters do not yield correct results.
+To achieve correct results, the epsilon parameter of the RANSAC algorithm has to be increased to 0.2.
+This leads to 6 faces being recognized correctly, but some points not being assigned to the correct faces,
+as the with each primitive extraction pass, points are extracted that lie within 0.2 of the recognized plane.
 
-\begin{figure}[ht!]
+
+\begin{figure}[p]
     \centering
     % First row
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_00}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_01}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/noise/cube_points_noise_01}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_02}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/noise/cube_points_noise_02}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_03}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/noise/cube_points_noise_03}
     \end{subfigure}%
 
 %    \vspace{0.5em}
 
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_00_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_primitives}
         \caption{Noise level 0.00}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_01_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/noise/cube_points_noise_01_primitives}
         \caption{Noise level 0.01}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_02_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/noise/cube_points_noise_02_primitives}
         \caption{Noise level 0.02}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_noise_03_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/noise/cube_points_noise_03_primitives}
         \caption{Noise level 0.03}
     \end{subfigure}%
 
@@ -69,11 +76,18 @@ The noise level is defined as the standard deviation of the noise added to the p
 
 As a big problem of depth from motion techniques is the lack of depth information in areas with minimal texture,
 the resilience to missing data is crucial.
-In figure~\ref{fig:test-missing} points towards the center of the cubes surfaces have been removed.
-This mimics the structure of the data of real world data from the Depth API,
+In figure~\ref{fig:test-missing}, points towards the center of the cubes surfaces have been removed.
+This mimics the structure of real world data from the Depth API,
 as edges are often detected more accurately than surfaces.
+%TODO: citation needed
 To achieve this, points have been removed with an increasing probability based on the
 quadratic distance to the center of the face the points belongs to.
+
+The algorithm is able to correctly recognize the faces of the cube with a missing level up to 24.
+With a missing level of 48, the algorithm still detects the planes, but doesn't assign all points to the faces.
+With increasing missing level, the n parameter, which defines the minimum number of points required to fit a primitive,
+is also required to be lowered.
+In real world applications this would lead to more false detections, primitives being detected where there are none.
 
 %Given a point $x$ with coordinates $(x_1, x_2, x_3)$, edge length $l$, and missing data rate $r$,
 %the distance to the closest edge can be calculated as |
@@ -89,46 +103,46 @@ quadratic distance to the center of the face the points belongs to.
 %\end{equation}
 
 
-\begin{figure}[ht!]
+\begin{figure}[p]
     \centering
     % First row
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_6_0}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_6_0}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_12_0}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_12}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_24_0}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_24}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_48_0}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_48}
     \end{subfigure}%
 
 %    \vspace{0.5em}
 
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_6_0_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_6_primitives}
         \caption{Missing level 6}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_12_0_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_12_primitives}
         \caption{Missing level 12}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_24_0_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_24_primitives}
         \caption{Missing level 24}
     \end{subfigure}%
     \begin{subfigure}[b]{0.25\textwidth}
         \centering
-        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/cube_points_missing_48_0_primitives}
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/missing/cube_points_missing_48_primitives}
         \caption{Missing level 48}
     \end{subfigure}%
 

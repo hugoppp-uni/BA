@@ -101,12 +101,16 @@ if __name__ == '__main__':
     num_points_per_edge = 100
     noise_level = 0.04  # standard deviation
 
-    for noise_level in np.arange(0, 0.06, 0.01):
-        filename = f"data/cube_points_noise_{'{:.2f}'.format(noise_level).replace('0.', '')}.ply"
-        # generate_point_cloud(filename, noise_level)
+    filename = f"data/cube_points.ply"
+    generate_point_cloud(filename, noise_level)
+    plot(filename)
+
+    for noise_level in np.arange(0.01, 0.06, 0.01):
+        filename = f"data/noise/cube_points_noise_{'{:.2f}'.format(noise_level).replace('0.', '')}.ply"
+        generate_point_cloud(filename, noise_level)
         plot(filename)
 
     for missing_data_level in [12, 24, 48]:
-        filename = f"data/cube_points_missing_{'{:.1f}'.format(missing_data_level).replace('.', '_')}.ply"
+        filename = f"data/missing/cube_points_missing_{'{:.0f}'.format(missing_data_level).replace('.', '_')}.ply"
         generate_point_cloud(filename, 0, missing_data_level)
         plot(filename)
