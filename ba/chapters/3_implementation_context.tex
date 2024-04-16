@@ -42,7 +42,39 @@ code and common scripting languages"~\parencite{beazley_swig_1996}.
 
 
 \section{Libraries and external code}
-\parencite{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API.
-It is used as a basis for converting depth images to point clouds in this project.
+The following libraries and/or publicly available code has been used in this thesis:
+\begin{itemize}
+    \item The RANSAC Implementation by \citeauthor{schnabel_efficient_2007} is used for primitive detection
+    and is further examined in this thesis. \parencite{schnabel_efficient_2007}
+    \item \citetitle{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API.
+    It is used as a basis for converting depth images to point clouds in this thesis.~\parencite{google_llc_codelab_raw_depth}
+\end{itemize}
+
+\subsection{Porting the Efficient RANSAC Algorithm Library to the ARM architecture}
+The code for \citetitle{schnabel_efficient_2007} by \citeauthor{schnabel_efficient_2007} is implemented in C\texttt{++}
+and designed to be compiled for the x86 architecture.
+To use it on an Android device, the library needs to be compiled for the ARM architecture.
+
+To compile the library for ARM, a few adjustments to the code are necessary.
+The library uses the \texttt{xmmintrin.h} header file, which is an x86-specific header file
+that provides access to the Streaming SIMD Extensions (SSE) instruction set. %TODO QUOTATION NEEDED
+In this case it is only used to allocate and free memory using the functions \texttt{\_mm\_malloc} and \texttt{\_mm\_free}.
+A conditional compilation directive is added to include the header file only if the target architecture is x86.
+If the target architecture is ARM, the standard library functions \texttt{malloc} and \texttt{free} are used instead.
+
+Furthermore, the bundled compiler used by Android Studio (clang)
+is stricter than the gcc compiler and requires some minor adjustments to the code.
+Most notably, the error \texttt{explicit qualification required} is fixed by adding the
+\texttt{this} keyword to all member function calls.
+Other adjustments include fixes like removing obsolete keywords and changing deprecated
+functions of the C++ standard library with their modern counterparts.
 
 
+\section{Testing}
+
+All algorithms implemented in the \texttt{procedural-augmented-reality} project are unit tested using
+Google Test, a C\texttt{++} testing framework.
+To achieve this, a CMake library target \textit{backend} is defined,
+that contains all functionality of the \texttt{procedural-augmented-reality} project.
+A second target that contains the tests, \textit{backend-test}, is defined,
+which links against \textit{backend} and the Google Test library.
