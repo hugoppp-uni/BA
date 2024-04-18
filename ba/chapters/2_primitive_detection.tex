@@ -1,16 +1,60 @@
 \chapter{Primitive Detection Algorithms}
-Various algorithms suitable for this task are compared in ~\parencite{kaiser_survey_2019}.
-For instance, an algorithm based on RANSAC like~\parencite{schnabel_efficient_2007}
-can utilize the point cloud to identify geometric primitives.
+Primitive detection algorithms are
+Primitive detection is an well-established area in computer vision.
+It includes a range of algorithms with different methods and data formats.
+
 
 \section{Categorization}
+\cite{kaiser_survey_2019} reviewed over 70 detection algorithms, evaluating them based on their input/output data types,
+underlying methodology, supported primitive types, context of application and provides a rating for multiple criteria.
+The authors categorize the underlying methodology of the algorithms into three categories:
+\begin{itemize}
+    \item \textbf{Stochastic:} algorithms that use random sampling to detect primitives, such as RANSAC
+    \item \textbf{Parameter Space:} algorithms that use a parameter space to detect primitives, such as the Hough Transform
+    \item \textbf{Other techniques}, for example primitive-driven region growing
+\end{itemize}
 
-\subsection{Stochastic (RANSAC)}
+The following sections provide an overview of the most common algorithms in each category.
 
-\subsection{Parameter Space (Hough Transform)}
+\subsection{RANSAC (Stochastic)}
+The Random Sample Consensus (RANSAC) algorithm is a widely used stochastic algorithm first introduced by~\cite{fischler_random_1981}.
+"The basic principle of the algorithm is to try many possible randomized models that could fit
+the data and evaluate how good this model is in order to find a consensus, i.e. an agreement of most of the data samples."~\parencite{kaiser_survey_2019}
 
-\subsection{Region Growing (Primitive Growing)}
+\subsection{Hough Transform (Parameter Space)}
+The Hough transform~\parencite{hough_method_1962} creates a voting space based on parameters where similar shapes overlap.
+This space is quantized into uniform sections, and each data point votes for the shapes it aligns with~\parencite{duda_use_1972}.
+After all data points have voted, the parameters with the highest votes reveal the shape that most accurately fits the input data.
+%todo go into more detail
+
+\subsection{Primitive-driven Region Growing}
 
 \section{Hough Transform vs RANSAC}
+The objective of this thesis is to develop an implementation that addresses a wide range of applications.
+Consequently, it is essential to concentrate on the more general methodologies that do not specialize in a specific context.
+The Hough Transform and the Random Sample Consensus (RANSAC) algorithm stand out as the most widely used methodologies~\parencite{schnabel_efficient_2007}.
+This section provides a comparison of these two methodologies.
+%todo
 
+In general, the performance of both algorithms varies based on the context of the application.
+With optimizations, both algorithms are suitable for a wide range of applications, as seen in the following example applications.
+The Hough Transform is more computationally expensive than RANSAC~\parencite{kaiser_survey_2019}.
+\cite{tarsha-kurdi_hough-transform_2007} found that its processing time is negligible in comparison to the Hough Transform.
+RANSAC is also more robust to noise and outliers~\parencite{kaiser_survey_2019}.
+It is also simpler and therefore easier to extend and adapt to different contexts~\parencite{tarsha-kurdi_hough-transform_2007, kaiser_survey_2019}.
+The main drawback of RANSAC is that results are not repeatable, as the algorithm is based on random sampling~\parencite{kaiser_survey_2019}.
+
+
+\paragraph{Application 1:}
+\cite{tarsha-kurdi_hough-transform_2007} analyzed the application of detecting building
+roofs as planes in 3D Lidar scans of cityscapes, and found that by default both RANSAC and Hough-Transform yield similar,
+insufficient results for their use-case.
+“That can be explained by the use of a pure mathematical principle,
+without taking into account the particularity of the building Lidar data. […] That is why
+[they] may detect a set of points which represents several roof planes or which belongs to several planes.”
+
+They also had difficulties to determine the parameters of Hough Transform,
+as the optimal values vary based on the characteristics of the point cloud.
+Motivated by RANSACS rapidity they investigated extending the RANSAC algorithm and with their improvements
+found that it produces satisfying results.
 
