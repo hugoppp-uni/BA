@@ -65,6 +65,7 @@ The Depth API is preferred in cases where it is crucial to have a depth value fo
 while the Raw depth API is preferred if accuracy of the depth information is crucial. \parencite{google_llc_arcore_doc}
 As accuracy is crucial for primitive detection and depth information for every pixel is not required, the Raw Depth API is used in this project.
 
+
 \section{Building the point cloud (PC)}
 As RANSAC is a point-based algorithm, we first need to convert the depth image to a point cloud.
 The process consists of three steps.
@@ -87,7 +88,8 @@ Then, the model matrix is used to transform the point into world space.
 These transformations can be seen as analog to the transformations needed to
 render an object in world space onto the screen, as described in section~\ref{sec:rendering-the-primitives}.
 In this case, the transformation is applied backwards, i.e.\ in the opposite direction of the arrows
-in the figure~\ref{fig:coordinate-systems}, starting from clip space (4) to view space (3) to world space (2).
+in the figure~\ref{fig:coordinate-systems}, starting from screen space (5) to world space (2).
+The parameters for the perspective projection matrix (section~\ref{sec:perspective-projection}) are derived from the camera intrinsics.
 
 
 %"Given point $A$ on the observed real-world geometry and a 2D point a representing the same point in the depth image,
@@ -117,8 +119,6 @@ in the figure~\ref{fig:coordinate-systems}, starting from clip space (4) to view
 
 %This results in a point in camera space,
 %which can then be transformed into world space by multiplying it with the model matrix.
-
-
 
 \subsection{Inserting new points into the point cloud}
 
@@ -178,15 +178,92 @@ The performance of the RANSAC algorithm with both approaches will be evaluated i
 
 
 \section{Rendering the primitives}\label{sec:rendering-the-primitives}
+The primitives are stored in world space, as in relative the worlds' origin.
+To render the primitives and overlay them onto the camera feed,
+transforming the points from world space to screen space is required.
 
-\begin{figure}[h]
+\subsection{OpenGL Rendering Pipeline}
+This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
+All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
+
+\subsubsection{Coordinate Systems}\label{subsec:coordinate-systems}
+In OpenGL rendering, five coordinate systems are commonly used, as illustrated in figure~\ref{fig:coordinate-systems}.
+In these coordinate systems, coordinates are relative to:
+\begin{enumerate}
+    \item the objects origin (\textit{Local Space})
+    \item the worlds origin (\textit{World Space})
+    \item the cameras origin (\textit{View Space})
+    \item the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 in all dimensions (frustum).
+    Coordinates outside the frustum are clipped.
+    Perspective projection can be applied here, more details in the next subsection.
+    \item the screen (\textit{Screen Space})  with the origin in the bottom left corner of the screen
+\end{enumerate}
+To transform vertices between these systems, their positions are multiplied with a corresponding transformation matrix.
+One exception is the viewport transformation,
+which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
+
+\begin{figure}[h!]
     \centering
-    \includegraphics[width=0.85\textwidth]{images/coordinate_systems}
+    \includegraphics[width=\linewidth]{images/coordinate_systems}
     \caption{Coordinate systems}
     \label{fig:coordinate-systems}
 \end{figure}
 
-\parencite{de_vries_learn_2020}
+\subsubsection{Perspective Projection}\label{sec:perspective-projection}
+In the real world, objects appear smaller the further away they are from the viewer.
+To simulate this effect in 3D rendering, perspective projection is used.
+Perspective projection is achieved through the use of homogeneous coordinates,
+which are an extension of the Cartesian coordinate system.
+In homogeneous coordinates, each point in 3D space is represented by four coordinates instead of three: $(x, y, z, w)$.
+
+The transformation from 3D space to a 2D projection is handled by a projection matrix.
+This matrix is designed to map the viewable scene, defined within a specified frustum, to a normalized cube known as clip space.
+The frustum is a truncated pyramid shape that represents the volume of space visible through the camera lens.
+The parameters of the frustum are defined by the field of view, aspect ratio, and near and far clipping planes,
+as illustrated by figure~\ref{fig:perspective}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.50\textwidth]{images/perspective}
+    \caption{Perspective Projection}
+    \label{fig:perspective}
+\end{figure}
+
+"The projection matrix [\ldots] also manipulates the w value of each vertex coordinate in such a way
+that the further away a vertex coordinate is from the viewer, the higher this w component becomes"~\parencite{de_vries_learn_2020}.
+When the coordinates are later divided by $w$ (a process known as the perspective divide), %TODO QUOTAION NEEDED
+it results in the desired perspective scaling effect.
+Points closer to the viewer have a smaller $w$ and are less affected by the divide,
+while points further away have a larger $w$ and are reduced in size more significantly
+
+\subsubsection{Shaders}\label{subsec:shaders}
+Shaders are isolated programs that run on the GPU and can be used to render objects.
+In OpenGL, they are written in the OpenGL Shading Language (GLSL).
+
+There are two types of shaders: Vertex shaders and fragment shaders.
+
+Vertex shaders are executed for each vertex defined in the vertex buffer, which is defined on the CPU and
+passed to the GPU by copying the data to the GPU's memory, e.g.\ by using the \texttt{glBufferData} function.
+A vertex shader can be used to transform the vertices from model space to screen space using the
+model, view, and projection matrices.
+To achieve this, the Model-View-Projection matrix (MVP) matrix can be passed as a \textit{uniform} to the vertex shader,
+which means it is the same for all vertices.
+The MVP matrix is the result of multiplying the model matrix, view matrix, and projection matrix.
+The vertex position is then multiplied by the MVP matrix to transform it into clip space.
+The resulting position is then passed to the fragment shader by assigning it to the \texttt{gl\_Position} variable.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.70\textwidth]{images/graphics-pipeline}
+    \caption{Graphics Pipeline. Blue boxes represent programmable stages. The Geometry Shader is optional and not covered in this thesis.}
+    \label{fig:graphics-pipeline}
+\end{figure}
+
+
+The graphics pipeline then rasterizes and interpolates the vertex positions alongside all other vertex attributes
+across the primitive, which are then passed to the fragment shader, which is executed for each pixel the primitive covers.
+The fragment shader then outputs the color of the pixel by setting the \texttt{out vec4 FragColor} variable.
+Before the final color is written to the framebuffer,
+a depth test is performed to determine if the pixel is visible or covered by other pixels from other primitives.
 
 \subsection{Preparing the data on the CPU}
 
