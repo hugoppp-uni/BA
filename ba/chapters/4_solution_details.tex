@@ -266,7 +266,31 @@ The fragment shader then outputs the color of the pixel by setting the \texttt{o
 Before the final color is written to the framebuffer,
 a depth test is performed to determine if the pixel is visible or covered by other pixels from other primitives.
 
+\subsection{Rendering planes}
+The RANSAC algorithm provides the parameterization of any detected plane using a normal vector $n$ and the point $p$ relative the worlds origin.
+Using OpenGL, a plane can be rendered by creating two triangles composed of 3 vertices each, with two corner vertices shared between the triangles.
+To render a plane from the parameterization, one can first find any two vectors $u$ and $v$
+that are perpendicular to each-other and to the normal vector $n$.
+Using $u$ and $v$, the four vertices of the plane can then be calculated by adding and subtracting $u * size / 2$ and $v * size / 2$ from the point $p$.
+
+\paragraph{Calculating an arbitrary perpendicular vector}
+The cross product of two vectors $a$ and $b$ is a vector that is perpendicular to both $a$ and $b$,
+as long as $a$ and $b$ are not parallel.
+To calculate an arbitrary perpendicular vector to a given vector $n$, one can use any of the 3 basis vectors ${b_1}$, ${b_2}$, and ${b_3}$.
+Choosing any of the basis vectors that is not parallel to $n$ will result in a perpendicular vector.
+To minimize floating point errors, which are largest for planes where $n$ almost aligns with the chosen basis vector,
+the basis vector with the smallest dot product with $n$ can be chosen.
+The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a perpendicular vector to $n$.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.6\linewidth]{images/renderedPlane}
+    \caption{Rendered RANSAC plane with size of 2*2m}
+\end{figure}
+
 \subsection{Convex Hull}
+
+
 \parencite{graham_efficient_1972}
 \parencite{andrew_another_1979}
 
