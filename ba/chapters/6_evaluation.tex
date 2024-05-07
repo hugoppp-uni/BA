@@ -102,6 +102,17 @@ In real world applications this would lead to more false detections, primitives 
 %    p = \left(\frac{\sqrt{(l/2 - |x'_1|) \cdot (l/2 - |x'_2|)}}{l / 2}\right)^2 \cdot r
 %\end{equation}
 
+\subsubsection{Resilience to Noise and Missing Data}
+
+When combining both noise and missing data, the quality of the detection is much worse.
+In figure~\ref{fig:test-both}, the cube is shown with a noise level of 0.01 and varying missing levels.
+With noise level 0.01 and missing level 6, the cube is still recognized correctly.
+With missing level 12, more than 6 faces are being recognized, but all the points are still assigned to primitives.
+This is explained by the fact that the parameterization of the planes is not accurate enough to fit all the points of the planes.
+Thus, the algorithm only fits a subset of the points to the primitive and will create a new parameterization
+for the remaining points.
+To achieve results with these conditions, the epsilon parameter had to be increased to 0.015 to achieve any results at all.
+Using a noise level of 0.02 with missing data yields no satisfactory results, even with tweaking the parameters.
 
 \begin{figure}[p]
     \centering
@@ -149,3 +160,43 @@ In real world applications this would lead to more false detections, primitives 
     \caption{Unit cube with varying missing level}
     \label{fig:test-missing}
 \end{figure}
+
+\begin{figure}[ht!]
+
+    \centering
+    % First row
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/matrix/cube_points_m6_n01}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/matrix/cube_points_m12_n01}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/matrix/cube_points_m24_n01}
+    \end{subfigure}%
+
+%    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/matrix/cube_points_m6_n01_primitives}
+        \caption{Missing level 6}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/matrix/cube_points_m12_n01_primitives}
+        \caption{Missing level 12}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{python/plots/cube_points/data/matrix/cube_points_m24_n01_primitives}
+        \caption{Missing level 24}
+    \end{subfigure}%
+    \caption{Unit cube with noise level = 0.01 and varying missing level}
+    \label{fig:test-both}
+\end{figure}
+
+\subsection{Tests on real world data}

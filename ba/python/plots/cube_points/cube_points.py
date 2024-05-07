@@ -45,7 +45,7 @@ def simulate_missing_data(edge_length, points, multiplier=1.0):
         distance = distance_from_center(point, edge_length)
         # Normalize the distance to be between 0 and 1
         normalized_distance = distance / (edge_length / 2)
-        return normalized_distance ** 2 * missing_data_rate ** 2
+        return normalized_distance * missing_data_rate
 
     # Apply the probability function to each point to determine if it should be dropped
     filtered_points = []
@@ -105,12 +105,20 @@ if __name__ == '__main__':
     generate_point_cloud(filename, noise_level)
     plot(filename)
 
-    for noise_level in np.arange(0.01, 0.06, 0.01):
+    for noise_level in np.arange(0.01, 0.04, 0.01):
         filename = f"data/noise/cube_points_noise_{'{:.2f}'.format(noise_level).replace('0.', '')}.ply"
         generate_point_cloud(filename, noise_level)
         plot(filename)
 
-    for missing_data_level in [12, 24, 48]:
+    for missing_data_level in [6, 12, 24, 48]:
         filename = f"data/missing/cube_points_missing_{'{:.0f}'.format(missing_data_level).replace('.', '_')}.ply"
         generate_point_cloud(filename, 0, missing_data_level)
         plot(filename)
+
+    for missing_data_level in [6, 12, 24, 48]:
+        for noise_level in np.arange(0.01, 0.04, 0.01):
+            missing = '{:.0f}'.format(missing_data_level).replace('.', '_')
+            noise = '{:.2f}'.format(noise_level).replace('0.', '')
+            filename = f"data/matrix/cube_points_m{missing}_n{noise}.ply"
+            generate_point_cloud(filename, noise_level, missing_data_level)
+            plot(filename)

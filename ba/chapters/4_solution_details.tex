@@ -178,7 +178,7 @@ The performance of the RANSAC algorithm with both approaches will be evaluated i
 
 
 \section{Rendering the primitives}\label{sec:rendering-the-primitives}
-The primitives are stored in world space, as in relative the worlds' origin.
+The primitives are stored in world space, as in relative to the worlds' origin.
 To render the primitives and overlay them onto the camera feed,
 transforming the points from world space to screen space is required.
 
@@ -239,7 +239,7 @@ while points further away have a larger $w$ and are reduced in size more signifi
 Shaders are isolated programs that run on the GPU and can be used to render objects.
 In OpenGL, they are written in the OpenGL Shading Language (GLSL).
 
-There are two types of shaders: Vertex shaders and fragment shaders.
+Two types of shaders are required to render an object: Vertex shaders and fragment shaders.
 
 Vertex shaders are executed for each vertex defined in the vertex buffer, which is defined on the CPU and
 passed to the GPU by copying the data to the GPU's memory, e.g.\ by using the \texttt{glBufferData} function.
@@ -248,6 +248,7 @@ model, view, and projection matrices.
 To achieve this, the Model-View-Projection matrix (MVP) matrix can be passed as a \textit{uniform} to the vertex shader,
 which means it is the same for all vertices.
 The MVP matrix is the result of multiplying the model matrix, view matrix, and projection matrix.
+As the MVP matrix is the same for all vertices of an object, it can be calculated on the CPU and passed to the GPU as a uniform.
 The vertex position is then multiplied by the MVP matrix to transform it into clip space.
 The resulting position is then passed to the fragment shader by assigning it to the \texttt{gl\_Position} variable.
 
@@ -264,6 +265,10 @@ across the primitive, which are then passed to the fragment shader, which is exe
 The fragment shader then outputs the color of the pixel by setting the \texttt{out vec4 FragColor} variable.
 Before the final color is written to the framebuffer,
 a depth test is performed to determine if the pixel is visible or covered by other pixels from other primitives.
+
+\subsection{Convex Hull}
+\parencite{graham_efficient_1972}
+\parencite{andrew_another_1979}
 
 \subsection{Preparing the data on the CPU}
 
