@@ -288,7 +288,44 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
     \caption{Rendered RANSAC plane with size of 2*2m}
 \end{figure}
 
-\subsection{Convex Hull}
+\subsection{Constraining the primitives to the area where the points are located}
+To constrain the primitive to the area where the points are located, multiple approaches can be used.
+One would be to calculate the maximum and minimum values of the points in each dimension and use these to create a bounding box for the plane.
+A more sophisticated approach would be to calculate the convex hull of the points to constrain the plane.
+
+The convex hull of a set of points is the smallest convex polygon that contains all the points. %TODO: Citation needed
+
+To render a plane constrained by the convex hull,
+a triangle mesh can be created with triangles consisting of two subsequent triangles of the hull vertices and the centroid of the hull as the third vertex each.
+Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm applied to a real dataset of a plane.
+
+\begin{figure}[ht!]
+
+    \centering
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{python/plots/hull/points}
+        \caption{Point data}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{python/plots/hull/hull}
+        \caption{Convex Hull}
+    \end{subfigure}%
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.8\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/hull}
+        \caption{Rendered Primitive}
+    \end{subfigure}%
+    \caption{Convex Hull with real data}
+    \label{fig:convex-hull}
+\end{figure}
+
+
+
 
 
 \parencite{graham_efficient_1972}
