@@ -129,7 +129,7 @@ To circumvent this, we can use a data structure that allows us to partition the 
 A simple approach would utilize a grid, where each cell represents a region in space, while a more sophisticated approach
 would use a spatial data structure like an octree to improve performance.
 
-\subsubsection{Octree}
+\paragraph{Octree}
 An octree is a tree data structure where each node has exactly eight children.
 The tree can be used to sparsely partition three-dimensional space into smaller cubes and allows for efficient
 insertion and traversal in logarithmic time.
@@ -143,6 +143,37 @@ insertion and traversal in logarithmic time.
     \label{fig:octrree}
 \end{figure}
 
+\subsubsection{Fixed Depth Octree}
+A straightforward approach to utilize an octree for point cloud storage is to use a variation of the octree with a fixed depth.
+Points are always inserted at the defined depth of the tree, creating all nodes up to that depth if they do not yet exist.
+The center coordinate of the leaf node can then be inferred as the point in space,
+thus saving the coordinates of the point explicitly is not required.
+Instead, to find the coordinates of a given node, the tree needs to be traversed while keeping track of
+the extent and center coordinate of the current node.
+This approach will naturally provide quantization of the point cloud, with the resolution of the point cloud
+determined by the depth of the octree and extend of the root .
+Using this approach, duplicate points are removed and adjusting the resolution of the octree
+allows for fine-tuning of the threshold distance between points under which points are considered duplicates.
+
+One advantage of an octree with a fixed with is simplicity.
+The biggest drawback is that the resolution of the point cloud is fixed and needs to be chosen beforehand.
+As the accuracy of the depth images differ between devices and other conditions like lighting and texture,
+it is difficult to choose a fixed resolution that works for all cases.
+
+When using a resolution that is too high, some surfaces might be detected as multiple surfaces instead of one.
+This is due to the same point being detected multiple times with slightly different depth values.
+If the uncertainty of the depth data is too high for the chosen resolution,
+points representing the same point in space will be added to neighboring cells of the octree.
+In the case of planes, this will lead to points in multiple cells across the normal of the plane,
+(increasing the thickness of the plane).
+The RANSAC algorithm will then detect multiple planes instead of one.
+
+Quantization might also lead to worse detection results for surface that do not align with the axis of the octree.
+For example, a plane that is tilted by a couple of degrees will lead to aliasing,
+meaning that the distance between the points and the fitted plane will vary across the plane.
+
+\subsubsection{Octree with neighborhood condition}
+%todo
 To utilize an octree for point cloud storage, the point coordinates and its data is saved in the leaf nodes of the octree.
 In this case, each node of the octree saves the coordinate of the point and its confidence value.
 When inserting a new point with a certain confidence value, a range query with a radius calculated from the confidence value
@@ -153,23 +184,26 @@ If a node is found with a higher confidence value, the new point is not inserted
 Using this approach, duplicate points are removed and adjusting the multiplier for the radius of the range query
 allows for fine-tuning of the threshold under which points are considered duplicates.
 
-A different approach is to use a variation of the octree with a fixed depth.
-Points are always inserted at the defined depth of the tree, creating all nodes up to that depth if they do not yet exist.
-The center coordinate of the leaf node can then be inferred as the point in space,
-thus saving the coordinates of the point explicitly is not required.
-Instead, to find the coordinates of a given node, the tree needs to be traversed while keeping track of
-the extent and center coordinate of the current node.
-This approach will naturally provide quantization of the point cloud, with the resolution of the point cloud
-determined by the depth of the octree and extend of the root node.
-Using this approach, duplicate points are removed and adjusting the resolution of the octree
-allows for fine-tuning of the threshold distance between points under which points are considered duplicates.
+To check if an octree node, which is an axis-aligned bounding box (AABB) with equal sides, and a sphere intersect,
+the square distance between the center the sphere and the closest point on the AABB is calculated.
+If the square distance is smaller than the square of the radius of the sphere, the sphere and the AABB intersect.
 
-One disadvantage of the latter approach is that the confidence value of the points are not considered,
-thus a higher threshold for filtering out low confidence points is required.
-This can be mitigated by extending the second approach by a technique similar to the first approach,
-where the confidence value is stored with the point and a range query is performed to replace lower confidence values.
-
-The performance of the RANSAC algorithm with both approaches will be evaluated in chapter~\ref{subsec:eval-point-clouds}.
+Calculating the square distance between a sphere and the closest point on the AABB can be achieved by summing up the
+squared distance in each dimension:
+If the sphere's center is outside the extent of the box on a given axis,
+the distance is the amount by which it exceeds the box's boundary; otherwise, the distance is zero.
+In $n$ dimensions, this can be expressed as
+\begin{equation}
+    d^2 = \sum_{i=1}^{n} \left\{
+    \begin{array}{ll}
+        (C_i - B_i - s) ^2 & \text{if } C_i > (B_i + s) \\
+        (C_i - B_i + s)^2  & \text{if } C_i < (B_i - s) \\
+        0                  & \text{otherwise}
+    \end{array}
+    \right
+\end{equation}
+where $C$ is the center of the sphere, $B$ is the center of the AABB, and $s$ is the half-size of the AABB\@.
+\parencite{glassner_graphicsgems_2013}
 
 
 \section{Detecting Primitives using RANSAC}
