@@ -85,6 +85,34 @@ project the point into camera space.
 Then, the model matrix is used to transform the point into world space.
 \parencite{google_llc_codelab_raw_depth,google_llc_arcore_doc}
 
+\subsubsection{Transformation Matrices and Basis Change}
+In the context of linear algebra,
+a basis of a $n$ dimensional vector space is a set of $n$ vectors that are both linearly independent
+and capable representing any geometric vector in the vector space as a linear combination of these basis vectors.
+If the basis vectors are orthogonal and normalized,
+they are called an orthonormal basis (provided that the inner product is defined on the vector space).
+Combined with an origin $O$ it defines a cartesian coordinate system.
+Using that coordinate system, any point $P$ in the vector space can be represented with a $n$ dimensional vector$\vec{p}$ relative to the origin $O$.
+In the case of a three-dimensional space and basis vectors $\vec{u}, \vec{v}, \vec{w}$, this is expressed as:
+\begin{equation}
+    P = O + a\vec{u} + b\vec{v} + c\vec{w} = O + \vec{p}
+\end{equation}
+
+In computer graphics, different coordinate systems are commonly used to represent points in space to simplify calculations.
+Common coordinate systems are the object's local space, world space, camera space, and screen space.
+This topic is covered in more detail in section~\ref{sec:coordinate-systems}.
+
+Transformation matrix..
+
+Homogenous coordinates..
+
+Basis chagne..
+
+\parencite{dorner_virtual_2019}
+
+\subsubsection{Perspective Projection Matrix}
+
+\subsubsection{Applying the transformation}
 These transformations can be seen as analog to the transformations needed to
 render an object in world space onto the screen, as described in section~\ref{sec:rendering-the-primitives}.
 In this case, the transformation is applied backwards, i.e.\ in the opposite direction of the arrows
@@ -92,40 +120,54 @@ in the figure~\ref{fig:coordinate-systems}, starting from screen space (5) to wo
 The parameters for the perspective projection matrix (section~\ref{sec:perspective-projection}) are derived from the camera intrinsics.
 
 
-%"Given point $A$ on the observed real-world geometry and a 2D point a representing the same point in the depth image,
-%the value given by the Depth API at a is equal to the length of $CA$ projected onto the principal axis.
-%This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$." \parencite{google_llc_arcore_doc}
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
-%    \caption{}
-%    \label{fig:}
-%\end{figure}
-%%codeblock with the formula
-%\begin{lstlisting}[language=Java]
-%float fx =
-%  cameraTextureIntrinsics.getFocalLength()[0] * depthWidth / intrinsicsDimensions[0];
-%float fy =
-%  cameraTextureIntrinsics.getFocalLength()[1] * depthHeight / intrinsicsDimensions[1];
-%float cx =
-%  cameraTextureIntrinsics.getPrincipalPoint()[0] * depthWidth / intrinsicsDimensions[0];
-%float cy =
-%  cameraTextureIntrinsics.getPrincipalPoint()[1] * depthHeight / intrinsicsDimensions[1];
-%pointCamera[0] = depthMeters * (x - cx) / fx;
-%pointCamera[1] = depthMeters * (cy - y) / fy;
-%pointCamera[2] = -depthMeters;
-%pointCamera[3] = 1;
-%\end{lstlisting}
+"Given point $A$ on the observed real-world geometry and a 2D point a representing the same point in the depth image,
+the value given by the Depth API at a is equal to the length of $CA$ projected onto the principal axis.
+This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$." \parencite{google_llc_arcore_doc}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
+    \caption{}
+    \label{fig:}
+\end{figure}
 
-%This results in a point in camera space,
-%which can then be transformed into world space by multiplying it with the model matrix.
+The intrinsics can be retrieved from the API using \texttt{frame.getCamera().getTextureIntrinsics()} method.
+However, this method returns the intrinsics of the camera image, which differs from the depth image, as the depth image usually has a lower resolution.
+To calculate the focal length $f$ and camera center $c$ from the provided intrinsics $I$ and the depth image $D$,
+the provided focal length and principal point are scaled by the ratio of the dimensions of the depth image and the camera image:
+\begin{equation}
+    R = \begin{bmatrix}
+            \frac{\dim(D_x)}{\dim(I_x)} & 0\\[8pt]
+            0 & \frac{\dim(D_y)}{\dim(I_y)}
+    \end{bmatrix}\\
+    f = R \cdot I_f \\
+    c = R \cdot I_c
+\end{equation}
+
+These values are then used to unproject the point into camera space (homogenous coordinates):
+\begin{equation}
+    p_c = \begin{pmatrix}
+              d \cdot (x - c_x) / f_x  \\
+              d \cdot (c_y - y) / f_y \\
+              -d                  \\
+              1
+    \end{pmatrix}
+\end{equation}
+
+As the resulting point is in camera space, it is relative to the camera's origin.
+To transform it into world space (relative to the worlds origin) the model matrix is retrieved by calling
+\texttt{cameraPoseAnchor.getPose().toMatrix(modelMatrix, 0)}.
+By multiplying the model matrix $P_m$ with $p_c$, the point is transformed into world space.
+\begin{equation}
+    p_w = P_m \cdot p_c
+\end{equation}
+
 
 \subsection{Inserting new points into the point cloud}
 
 The last step is to add new points to the point cloud.
 As new depth images are captured every frame, we can not simply store a list of all points to append the new data to.
-This would lead to a massive amount of points that represent the same point in space, with slightly different depth values.
-To circumvent this, we can use a data structure that allows us to partition the space into smaller regions, and only store one point per region.
+This would lead to a massive amount of points that represent the same point in the real world, with slightly different position values.
+To circumvent this, we can use a spatial data structure, that allows us to partition the space into smaller regions, and only store one point per region.
 A simple approach would utilize a grid, where each cell represents a region in space, while a more sophisticated approach
 would use a spatial data structure like an octree to improve performance.
 
@@ -155,10 +197,10 @@ determined by the depth of the octree and extend of the root .
 Using this approach, duplicate points are removed and adjusting the resolution of the octree
 allows for fine-tuning of the threshold distance between points under which points are considered duplicates.
 
-One advantage of an octree with a fixed with is simplicity.
+One advantage of an octree with a fixed width is simplicity, as points are always inserted at the same depth and deletion of points is not required.
 The biggest drawback is that the resolution of the point cloud is fixed and needs to be chosen beforehand.
-As the accuracy of the depth images differ between devices and other conditions like lighting and texture,
-it is difficult to choose a fixed resolution that works for all cases.
+As the accuracy of the depth images differ between devices and other conditions like lighting and texture of the captured surface,
+it is difficult to choose a fixed resolution that works for all cases:
 
 When using a resolution that is too high, some surfaces might be detected as multiple surfaces instead of one.
 This is due to the same point being detected multiple times with slightly different depth values.
@@ -184,8 +226,9 @@ If a node is found with a higher confidence value, the new point is not inserted
 Using this approach, duplicate points are removed and adjusting the multiplier for the radius of the range query
 allows for fine-tuning of the threshold under which points are considered duplicates.
 
+\paragraph{Range Query}
 To check if an octree node, which is an axis-aligned bounding box (AABB) with equal sides, and a sphere intersect,
-the square distance between the center the sphere and the closest point on the AABB is calculated.
+the square distance between the center of the sphere and the closest point on the AABB is calculated.
 If the square distance is smaller than the square of the radius of the sphere, the sphere and the AABB intersect.
 
 Calculating the square distance between a sphere and the closest point on the AABB can be achieved by summing up the
@@ -196,14 +239,28 @@ In $n$ dimensions, this can be expressed as
 \begin{equation}
     d^2 = \sum_{i=1}^{n} \left\{
     \begin{array}{ll}
-        (C_i - B_i - s) ^2 & \text{if } C_i > (B_i + s) \\
-        (C_i - B_i + s)^2  & \text{if } C_i < (B_i - s) \\
-        0                  & \text{otherwise}
+    (C_i - B_i - s)
+        ^2                & \text{if } C_i > (B_i + s) \\
+        (C_i - B_i + s)^2 & \text{if } C_i < (B_i - s) \\
+        0                 & \text{otherwise}
     \end{array}
-    \right
+    \right\}
 \end{equation}
 where $C$ is the center of the sphere, $B$ is the center of the AABB, and $s$ is the half-size of the AABB\@.
-\parencite{glassner_graphicsgems_2013}
+\parencite{glassner_graphics_1994}
+
+\paragraph{Deleting nodes}
+Deleting nodes from an octree is a non-trivial task~\parencite{samet_design_1989, finkel_quad_1974}, as it may require restructuring the tree to maintain the octree properties.
+\citeauthor{finkel_quad_1974}~\parencite{finkel_quad_1974} suggest reinserting all child nodes of the deleted node,
+while [] propose a more efficient method, that tries to replace the deleted node with a suited node, such that the octree properties are maintained.
+For simplicity, the first approach is used.
+In addition, an optimization is made:
+As nodes are only deleted when a new point is inserted with a higher confidence value,
+it is possible to simply update the old node with the new position, in case the octree properties are not violated.
+This is the case when the new point is within the same cell as the old point.
+The tree is first traversed once to check if there exists such a node in the search radius.
+If such a node is found, the old node is updated and the new point is not inserted.
+If such a node is not found, the old node is deleted and the new point is inserted.
 
 
 \section{Detecting Primitives using RANSAC}
@@ -220,7 +277,7 @@ transforming the points from world space to screen space is required.
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
 All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
 
-\subsubsection{Coordinate Systems}\label{subsec:coordinate-systems}
+\subsubsection{Coordinate Systems}\label{sec:coordinate-systems}
 In OpenGL rendering, five coordinate systems are commonly used, as illustrated in figure~\ref{fig:coordinate-systems}.
 In these coordinate systems, coordinates are relative to:
 \begin{enumerate}
@@ -365,14 +422,14 @@ Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm appli
 \parencite{graham_efficient_1972}
 \parencite{andrew_another_1979}
 
-\subsection{Preparing the data on the CPU}
-
-\subsubsection{Restraining the primitives}
-
-\paragraph{Cross-section => Floor and Walls}
-
-\paragraph{Using a bounding box / extend of points}
-
-\subsubsection{Building a mesh}
-
-\subsection{Rendering on the GPU (shaders)}
+%\subsection{Preparing the data on the CPU}
+%
+%\subsubsection{Restraining the primitives}
+%
+%\paragraph{Cross-section => Floor and Walls}
+%
+%\paragraph{Using a bounding box / extend of points}
+%
+%\subsubsection{Building a mesh}
+%
+%\subsection{Rendering on the GPU (shaders)}
