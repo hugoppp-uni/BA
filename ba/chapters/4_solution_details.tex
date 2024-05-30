@@ -121,6 +121,7 @@ but it is reasonable to assume that the Raw Depth API accesses the sparse depth 
 
 \cite{valentin_depth_2018}
 
+
 \section{Building the point cloud (PC)}
 As RANSAC is a point-based algorithm, we first need to convert the depth image to a point cloud.
 The process consists of three steps.
@@ -131,20 +132,92 @@ The process consists of three steps.
 \end{enumerate}
 
 \subsection{Filtering low confidence points}
-The confidence image provided by the Raw Depth API can be used to filter out points with low confidence.
+The Raw Depth API provides a confidence image that indicates the reliability of the depth information for each pixel.
+To improve the accuracy of the point cloud, points with low confidence are filtered out.
 A threshold value is set, below which points are discarded.
+Filtering out low confidence points early in the pipeline will also improve performance,
+as fewer points need to be processed in the following steps.
 
 \subsection{Transforming depth image pixels to world coordinate points}
-To convert the point into world coordinates, first the camera intrinsics are used to
-project the point into camera space.
-Then, the model matrix is used to transform the point into world space.
-\parencite{google_llc_codelab_raw_depth,google_llc_arcore_doc}
+Before inserting points into the point cloud, the depth images values from the depth images
+first need to be converted into 3-dimensional coordinates relative to a fixed origin in the world.
+This section will first provide a brief overview of the mathematical concepts required to understand the transformation process.
+Then, the process of transforming a point from the depth image into world space will be explained.
 
+%To convert the point into world coordinates, first the camera intrinsics are used to
+%project the point into camera space.
+%Then, the model matrix is used to transform the point into world space.
+%\parencite{google_llc_codelab_raw_depth,google_llc_arcore_doc}
+
+\subsubsection{Transformations}
+
+In computer graphics matrices are used to represent geometric transformations like translation, scaling, rotation,
+shearing, reflection and projection.
+While it is out of scope to cover all of these transformations in detail,
+this section will use the example of the translation to explain the concepts of transformations and homogenous coordinates.
+
+To apply transformations to a point, the points is represented in homogenous coordinates,
+which is a 4x1 matrix with the fourth $w$ element set to 1.
+
+\begin{equation}
+    p = \begin{bmatrix}
+            w \cdot x \\
+            w \cdot y \\
+            w \cdot z \\
+            w
+    \end{bmatrix}
+\end{equation}
+
+The homogenous coordinates are then multiplied with a transformation matrix $M$ to apply the transformation.
+\begin{equation}
+    p' = M \cdot p
+\end{equation}
+In the case of a translation, the translation matrix is a 4x4 matrix with the translation vector $t$ as the fourth column.
+\begin{equation}
+    p' = \begin{bmatrix}
+             1 & 0 & 0 & t_x \\
+             0 & 1 & 0 & t_y \\
+             0 & 0 & 1 & t_z \\
+             0 & 0 & 0 & 1
+    \end{bmatrix} \cdot \begin{bmatrix}
+                            w \cdot x \\
+                            w \cdot y \\
+                            w \cdot z \\
+                            w
+    \end{bmatrix} = \begin{bmatrix}
+                        w \cdot (x + t_x) \\
+                        w \cdot (y + t_y) \\
+                        w \cdot (z + t_z) \\
+                        w
+    \end{bmatrix}
+\end{equation}
+
+After applying the transformation matrix, the resulting point is then divided by the fourth element $w$.
+The cartesian coordinates of the point are then the first three elements of the resulting matrix.
+
+One advantage of using matrices to represent transformations is that multiple transformations can be combined by
+multiplying the transformation matrices.
+The resulting matrix will then apply all transformations in the order they were multiplied.
+\begin{equation}
+    p' = (M_n \cdots M_3 \cdot M_2 \cdot M_1) \cdot p
+\end{equation}
+If multiple transformations were to be applied to thousands of points,
+it would be more efficient to multiply the transformation matrices once and then apply the resulting matrix to all points.
+Graphics Processing Unit's (GPU's) also contain hardware implementation of 4x4 matrix operations,
+which further increases the performance of matrix operations over other methods.
+
+\cite{dorner_virtual_2019}
 \subsubsection{Coordinate Systems and Basis Change}
 
-In computer graphics, different coordinate systems (also known as spaces) are commonly used to represent points in space to simplify calculations.
+Different coordinate systems (also known as spaces) are commonly used to represent points in space to simplify calculations.
+For example, lets imagine a camera inside a moving car, filming a person inside the car.
+If we wanted to perform calculations relative to the person and the camera, e.g.\ the distance between them,
+and used coordinates relative to the world, we would have to account for the movement of the car in each frame.
+Instead, we can use the local coordinate system of the camera,
+where all points are relative to the camera, which simplifies the calculations.
+
 This section will provide a brief mathematical overview of coordinate systems and how to transform points between them.
-As examples, the world and camera space will be used, as they are required to unproject the depth image into world space.
+As examples, the world and local space will be used, as they are required to unproject the depth image into world space.
 The usage of these coordinate systems in context of the OpenGL rendering pipeline will also be covered in section~\ref{sec:coordinate-systems}.
 
 In the context of linear algebra,
@@ -152,33 +225,57 @@ a basis of a $n$ dimensional vector space is a set of $n$ vectors that are both 
 and capable representing any geometric vector in the vector space as a linear combination of these basis vectors.
 If the basis vectors are orthogonal and normalized,
 they are called an orthonormal basis (provided that the inner product is defined on the vector space).
-Combined with an origin $O$ it defines a cartesian coordinate system.
-Using that coordinate system, any point $P$ in the vector space can be represented with a $n$ dimensional vector$\vec{p}$ relative to the origin $O$.
+Combined with an origin $O$ it defines a cartesian coordinate system $K$.
+Using that coordinate system, any point $P$ in the vector space can be represented with a $n$ dimensional
+vector$\vec{p}$ relative to the origin $O$.
 In the case of a three-dimensional space and basis vectors $\vec{u}, \vec{v}, \vec{w}$, this is expressed as:
 \begin{equation}
     P = O + a\vec{u} + b\vec{v} + c\vec{w} = O + \vec{p}
 \end{equation}
 
+Let's assume we have a point $P$ in local space, and we want to transform it into world space.
+To achieve this, we need to find a transformation matrix $M$ that transforms points
+from local space $K$ to world space $K'$ using the formula $p' = M\cdot p$.
 
-Transformation matrix..
+$K$ and $K'$ are both three-dimensional cartesian coordinate systems, with 3 basis vectors and one origin each.
+Let the basis vectors of $K'$ be $\vec{u}, \vec{v}, \vec{w}$ and the origin $O$.
+Note that these are described as relative to $K$.
+A 4x4 transformation matrix $M'$ that transforms points from $K'$ to $K$ is then constructed as follows:
+\begin{equation}
+    M' = \begin{bmatrix}
+            \vec{u_x} & \vec{v_x} & \vec{w_x} & O_x \\
+            \vec{u_y} & \vec{v_y} & \vec{w_y} & O_y \\
+            \vec{u_z} & \vec{v_z} & \vec{w_z} & O_z \\
+            0         & 0         & 0         & 1
+    \end{bmatrix}
+\end{equation}
 
-Homogenous coordinates..
+Consequently, the transformation matrix $M$ that transforms points from $K$ to $K'$ is the inverse of $M'$.
+To transform a point $P$ from $K$ to $K'$, the point $P$ as homogenous coordinates $p$ is multiplied with the inverse of $M'$:
+\begin{equation}
+    p' = M'^{-1} \cdot p = M\cdot p
+\end{equation}
 
-Basis chagne..
+A transformation matrix, that transforms points from local space to world space can also be referred as $T_{wl}$:
+\begin{equation}
+    p_w = T_{wl} \cdot p_l
+\end{equation}
 
-\parencite{dorner_virtual_2019}
 
-\subsubsection{Perspective Projection Matrix}
+\cite{dorner_virtual_2019}
 
-\subsubsection{Applying the transformation}
+\subsubsection{Camera Intrinsics and Perspective Projection}
+
+\subsubsection{Applying the transformation to the depth pixels}
 "Given point $A$ on the observed real-world geometry and a 2D point a representing the same point in the depth image,
 the value given by the Depth API at a is equal to the length of $CA$ projected onto the principal axis.
-This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$." \parencite{google_llc_arcore_doc}
+This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$."~\parencite{google_llc_arcore_doc}
+See figure~\ref{fig:diagram-depth-values}.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
-    \caption{}
-    \label{fig:}
+    \caption{Diagram of depth values from the Depth API}
+    \label{fig:diagram-depth-values}
 \end{figure}
 
 The intrinsics can be retrieved from the API using \texttt{frame.getCamera().getTextureIntrinsics()} method.
@@ -194,9 +291,9 @@ the provided focal length and principal point are scaled by the ratio of the dim
     c = R \cdot I_c
 \end{equation}
 
-These values are then used to unproject the point into camera space (homogenous coordinates):
+These values are then used to unproject the point into local space relative to the camera:
 \begin{equation}
-    p_c = \begin{pmatrix}
+    p_l = \begin{pmatrix}
               d \cdot (x - c_x) / f_x \\
               d \cdot (c_y - y) / f_y \\
               -d                      \\
@@ -204,13 +301,17 @@ These values are then used to unproject the point into camera space (homogenous 
     \end{pmatrix}
 \end{equation}
 
-As the resulting point is in camera space, it is relative to the camera's origin.
-To transform it into world space (relative to the worlds origin) the model matrix is retrieved by calling
+As the resulting point is in a local space $K_l$ relative to the camera, it needs to be transformed into world space $K_w$.
+To transform it into world space the model matrix is retrieved by calling
 \texttt{cameraPoseAnchor.getPose().toMatrix(modelMatrix, 0)}.
-By multiplying the model matrix $P_m$ with $p_c$, the point is transformed into world space.
+The model matrix is a transformation matrix that transforms points from a local space (in this case a space relative to the camera)
+to world space.
+By multiplying the model matrix $T_{wl}$ with $p_l$, the point is transformed into world space.
 \begin{equation}
-    p_w = P_m \cdot p_c
+    p_w = T_{wl} \cdot p_l
 \end{equation}
+
+\cite{google_llc_codelab_raw_depth, google_llc_arcore_doc}
 
 \subsection{Inserting new points into the point cloud}
 
@@ -218,11 +319,11 @@ The last step is to add new points to the point cloud.
 As new depth images are captured every frame, we can not simply store a list of all points to append the new data to.
 This would lead to a massive amount of points that represent the same point in the real world, with slightly different position values.
 To circumvent this, we can use a spatial data structure, that allows us to partition the space into smaller regions, and only store one point per region.
-A simple approach would utilize a grid, where each cell represents a region in space, while a more sophisticated approach
-would use a spatial data structure like an octree to improve performance.
+A simple approach would utilize a three-dimensional grid, where each cell represents a region in space,
+while a more sophisticated approach would use a spatial data structure like an octree to improve performance.
 
 \paragraph{Octree}
-An octree is a tree data structure where each node has exactly eight children.
+An octree is a spatial tree data structure where each node has exactly eight children.
 The tree can be used to sparsely partition three-dimensional space into smaller cubes and allows for efficient
 insertion and traversal in logarithmic time.
 "For the definition a simple recursive splitting of [cubes] is continued until there is only one point in a [cube]."
@@ -243,7 +344,9 @@ thus saving the coordinates of the point explicitly is not required.
 Instead, to find the coordinates of a given node, the tree needs to be traversed while keeping track of
 the extent and center coordinate of the current node.
 This approach will naturally provide quantization of the point cloud, with the resolution of the point cloud
-determined by the depth of the octree and extend of the root .
+determined by the depth of the octree and extend of the root.
+This is functionally equal to a three-dimensional grid,
+but with the advantage of logarithmic time complexity for insertion and traversal.
 Using this approach, duplicate points are removed and adjusting the resolution of the octree
 allows for fine-tuning of the threshold distance between points under which points are considered duplicates.
 
@@ -469,8 +572,7 @@ Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm appli
 
 
 
-\parencite{graham_efficient_1972}
-\parencite{andrew_another_1979}
+\parencite{graham_efficient_1972, andrew_another_1979}
 
 %\subsection{Preparing the data on the CPU}
 %
