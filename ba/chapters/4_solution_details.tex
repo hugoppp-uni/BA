@@ -209,6 +209,7 @@ which further increases the performance of matrix operations over other methods.
 Transformation matrices can also be inverted ($M^{-1}$) to apply the inverse transformation, or in other words 'undo' the transformation.
 
 \cite{dorner_virtual_2019}
+
 \subsubsection{Coordinate Systems and Basis Change}
 
 Different coordinate systems, also known as spaces, are commonly used to represent points in space.
@@ -300,18 +301,45 @@ which is applied by OpenGL automatically based on the viewport settings provided
 
 
 \subsubsection{Camera Intrinsics and Perspective Projection}
+In the real world, objects appear smaller the further away they are from the viewer.
+The same concept applies to images captured by cameras.
+
+\begin{figure}[h!]
+    \centering
+\end{figure}
+
+\begin{figure}[ht!]
+    \centering
+    \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
+        \includegraphics[width=1\linewidth]{images/intrinsics}
+        %    source: szeliski_computer_nodate
+        \caption{Overview of intrinsic parameters in 3D}
+    \end{subfigure}%
+    \hspace{0.05\textwidth} % Added space between subfigures
+    \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
+        \resizebox{\linewidth}{!}{
+            \input{images/intrinsics2d}
+        }
+    \caption{Point $A$ projected onto the image plane in $y$-direction}
+    \end{subfigure}%
+    \caption{Camera intrinsics}
+    \label{fig:intrinsics}
+\end{figure}
+
+
+\cite{szeliski_computer_nodate}
 
 \subsubsection{Applying the transformation to the depth pixels}
 "Given point $A$ on the observed real-world geometry and a 2D point $a$ representing the same point in the depth image,
 the value given by the Depth API at $a$ is equal to the length of $CA$ projected onto the principal axis.
 This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$."~\parencite{google_llc_arcore_doc}
 %See figure~\ref{fig:diagram-depth-values}.
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
-    \caption{Diagram of depth values from the Depth API}
-    \label{fig:diagram-depth-values}
-\end{figure}
+%\begin{figure}[h]
+%    \centering
+%    \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
+%    \caption{Diagram of depth values from the Depth API}
+%    \label{fig:diagram-depth-values}
+%\end{figure}
 This can be seen as the pixels being in screen space, as shown in figure~\ref{fig:coordinate-systems}.
 To convert these points into world space, the transformations need to be applied backwards:
 \begin{enumerate}
