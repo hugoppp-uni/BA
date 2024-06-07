@@ -122,8 +122,8 @@ but it is reasonable to assume that the Raw Depth API accesses the sparse depth 
 \cite{valentin_depth_2018}
 
 
-\section{Building the point cloud (PC)}
-As RANSAC is a point-based algorithm, we first need to convert the depth image to a point cloud.
+\section{Building the point cloud}
+As RANSAC is a point-based algorithm, the depth image has to be converted to a point cloud.
 The process consists of three steps.
 \begin{enumerate}
     \item Filtering low confidence points
@@ -192,7 +192,8 @@ In the case of a translation, the translation matrix is a 4x4 matrix with the tr
     \end{bmatrix}
 \end{equation}
 
-After applying the transformation matrix, the resulting point is then divided by the fourth element $w$.
+Note that the fourth element $w$ is not always 1, as later explained in the section about perspective projection.
+Thus, after applying the transformation matrix, the resulting matrix is then divided by the fourth element $w$.
 The cartesian coordinates of the point are then the first three elements of the resulting matrix.
 
 One advantage of using matrices to represent transformations is that multiple transformations can be combined by
@@ -205,16 +206,19 @@ If multiple transformations were to be applied to thousands of points,
 it would be more efficient to multiply the transformation matrices once and then apply the resulting matrix to all points.
 Graphics Processing Unit's (GPU's) also contain hardware implementation of 4x4 matrix operations,
 which further increases the performance of matrix operations over other methods.
+Transformation matrices can also be inverted ($M^{-1}$) to apply the inverse transformation, or in other words 'undo' the transformation.
 
 \cite{dorner_virtual_2019}
 \subsubsection{Coordinate Systems and Basis Change}
 
-Different coordinate systems (also known as spaces) are commonly used to represent points in space to simplify calculations.
-For example, lets imagine a camera inside a moving car, filming a person inside the car.
-If we wanted to perform calculations relative to the person and the camera, e.g.\ the distance between them,
-and used coordinates relative to the world, we would have to account for the movement of the car in each frame.
-Instead, we can use the local coordinate system of the camera,
-where all points are relative to the camera, which simplifies the calculations.
+Different coordinate systems, also known as spaces, are commonly used to represent points in space.
+This simplifies calculations.
+For instance, consider a camera inside a moving car, filming a person inside the car.
+A smooth camera movement around the person is to be implemented.
+If calculations are performed based on coordinates relative to the world (world space),
+the movement of the car needs to be accounted for in the calculation for the camera movement in each frame.
+However, by using the local coordinate system of the car, where all points are relative to the car itself (local space),
+calculations can be simplified.
 
 This section will provide a brief mathematical overview of coordinate systems and how to transform points between them.
 As examples, the world and local space will be used, as they are required to unproject the depth image into world space.
@@ -233,9 +237,13 @@ In the case of a three-dimensional space and basis vectors $\vec{u}, \vec{v}, \v
     P = O + a\vec{u} + b\vec{v} + c\vec{w} = O + \vec{p}
 \end{equation}
 
-Let's assume we have a point $P$ in local space, and we want to transform it into world space.
-To achieve this, we need to find a transformation matrix $M$ that transforms points
-from local space $K$ to world space $K'$ using the formula $p' = M\cdot p$.
+Consider a point $P$ in local space that needs to be transformed into world space.
+This transformation requires finding a transformation matrix $M$ that transforms points
+from local space $K$ to world space $K'$.
+The transformation can be achieved using the formula:
+\begin{equation}
+    p' = M\cdot p
+\end{equation}
 
 $K$ and $K'$ are both three-dimensional cartesian coordinate systems, with 3 basis vectors and one origin each.
 Let the basis vectors of $K'$ be $\vec{u}, \vec{v}, \vec{w}$ and the origin $O$.
@@ -250,8 +258,8 @@ A 4x4 transformation matrix $M'$ that transforms points from $K'$ to $K$ is then
     \end{bmatrix}
 \end{equation}
 
-Consequently, the transformation matrix $M$ that transforms points from $K$ to $K'$ is the inverse of $M'$.
-To transform a point $P$ from $K$ to $K'$, the point $P$ as homogenous coordinates $p$ is multiplied with the inverse of $M'$:
+This matrix can then be used to transform points from $K'$ to $K$, by multiplying the point as homogenous coordinates with $M'$.
+Consequently, the transformation matrix $M$ that transforms a point $P$ from $K$ to $K'$ is the inverse of $M'$:
 \begin{equation}
     p' = M'^{-1} \cdot p = M\cdot p
 \end{equation}
@@ -261,34 +269,76 @@ A transformation matrix, that transforms points from local space to world space 
     p_w = T_{wl} \cdot p_l
 \end{equation}
 
-
 \cite{dorner_virtual_2019}
+
+\subsubsection{Common Coordinate Systems}\label{sec:coordinate-systems}
+To further clarify the concept of coordinate systems, this section provides an overview of the most common coordinate systems,
+specifically in the context of the OpenGL rendering pipeline, which will later be used to render the primitives.
+In OpenGL rendering, five coordinate systems are commonly used, as illustrated in figure~\ref{fig:coordinate-systems}.
+In these coordinate systems, coordinates are relative to:
+\begin{enumerate}
+    \item the objects origin (\textit{Local Space})
+    \item the worlds origin (\textit{World Space})
+    \item the cameras origin (\textit{View Space})
+    \item the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 (normalized device coordinates) in all dimensions (frustum).
+    Coordinates outside the frustum are clipped.
+    Perspective projection can be applied here, more details in the next subsection.
+    \item the screen (\textit{Screen Space})  with the origin in the bottom left corner of the screen
+\end{enumerate}
+To transform points between these systems, their positions are multiplied with a corresponding transformation matrix.
+One exception is the viewport transformation,
+which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\linewidth]{images/coordinate_systems}
+    \caption{Coordinate systems}
+    \label{fig:coordinate-systems}
+\end{figure}
+
+\cite{de_vries_learn_2020}
+
 
 \subsubsection{Camera Intrinsics and Perspective Projection}
 
 \subsubsection{Applying the transformation to the depth pixels}
-"Given point $A$ on the observed real-world geometry and a 2D point a representing the same point in the depth image,
-the value given by the Depth API at a is equal to the length of $CA$ projected onto the principal axis.
+"Given point $A$ on the observed real-world geometry and a 2D point $a$ representing the same point in the depth image,
+the value given by the Depth API at $a$ is equal to the length of $CA$ projected onto the principal axis.
 This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$."~\parencite{google_llc_arcore_doc}
-See figure~\ref{fig:diagram-depth-values}.
+%See figure~\ref{fig:diagram-depth-values}.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
     \caption{Diagram of depth values from the Depth API}
     \label{fig:diagram-depth-values}
 \end{figure}
+This can be seen as the pixels being in screen space, as shown in figure~\ref{fig:coordinate-systems}.
+To convert these points into world space, the transformations need to be applied backwards:
+\begin{enumerate}
+    \item From screen space to view space (`unprojecting`)
+    \item From view space to world space
+\end{enumerate}
+%`Unprojecting` the pixel from screen space to view space and then to world space is required.
+%Note that clip space is not applicable here, as ARCore provides intrinsics in pixels, not normalized device coordinates,
+%thus the projection matrix directly transforms from view space to screen space.
+Another way to think about this procedure is to conceptualize the unprojecting step as transforming the pixels into a local space
+relative to the camera, as defined by the camera's position, up and look vector.
+Subsequently, the point is transformed from the cameras local space into world space using the cameras model matrix.
+For simplicity and to avoid confusion when transforming into different directions, the second approach is used going forward.
 
+
+To transform the pixel, first the depth value is used to calculate the point in local space relative to the camera $K_l$ using the camera intrinsics.
 The intrinsics can be retrieved from the API using \texttt{frame.getCamera().getTextureIntrinsics()} method.
 However, this method returns the intrinsics of the camera image, which differs from the depth image, as the depth image usually has a lower resolution.
 To calculate the focal length $f$ and camera center $c$ from the provided intrinsics $I$ and the depth image $D$,
 the provided focal length and principal point are scaled by the ratio of the dimensions of the depth image and the camera image:
 \begin{equation}
-    R = \begin{bmatrix}
-            \frac{\dim(D_x)}{I_{xDim}} & 0\\[8pt]
-            0                          & \frac{\dim(D_y)}{I_{yDim}}
+    S = \begin{bmatrix}
+            \frac{\dim_x(D)}{I_{xDim}} & 0\\[8pt]
+            0                          & \frac{\dim_y(D)}{I_{yDim}}
     \end{bmatrix}\\
-    f = R \cdot I_f \\
-    c = R \cdot I_c
+    f = S \cdot I_f \\
+    c = S \cdot I_c
 \end{equation}
 
 These values are then used to unproject the point into local space relative to the camera:
@@ -301,11 +351,10 @@ These values are then used to unproject the point into local space relative to t
     \end{pmatrix}
 \end{equation}
 
-As the resulting point is in a local space $K_l$ relative to the camera, it needs to be transformed into world space $K_w$.
+As the resulting point is in a local space relative to the camera $K_l$, it needs to be transformed into world space $K_w$.
 To transform it into world space the model matrix is retrieved by calling
 \texttt{cameraPoseAnchor.getPose().toMatrix(modelMatrix, 0)}.
-The model matrix is a transformation matrix that transforms points from a local space (in this case a space relative to the camera)
-to world space.
+%The model matrix is a transformation matrix that transforms points from a local space to world space.
 By multiplying the model matrix $T_{wl}$ with $p_l$, the point is transformed into world space.
 \begin{equation}
     p_w = T_{wl} \cdot p_l
@@ -315,12 +364,17 @@ By multiplying the model matrix $T_{wl}$ with $p_l$, the point is transformed in
 
 \subsection{Inserting new points into the point cloud}
 
-The last step is to add new points to the point cloud.
-As new depth images are captured every frame, we can not simply store a list of all points to append the new data to.
-This would lead to a massive amount of points that represent the same point in the real world, with slightly different position values.
-To circumvent this, we can use a spatial data structure, that allows us to partition the space into smaller regions, and only store one point per region.
-A simple approach would utilize a three-dimensional grid, where each cell represents a region in space,
-while a more sophisticated approach would use a spatial data structure like an octree to improve performance.
+The final step involves adding new points to the point cloud.
+However, simply storing a list of all points and appending new data to it is not feasible.
+As a new depth image is captured every frame, the number of points would grow endlessly.
+This approach would also result in a massive number of points representing the same real-world point,
+but with slightly different position values,
+as subsequent depth images will show the same real-world point from different angles, with depth values varying slightly.
+To address this issue, a spatial data structure that partitions the space into smaller regions and
+allows us to store only one point per region can be used.
+One possible approach is to use a three-dimensional grid, where each cell represents a region in space.
+Alternatively, a more advanced approach involves utilizing a spatial data structure such as an octree,
+which can provide improved performance.
 
 \paragraph{Octree}
 An octree is a spatial tree data structure where each node has exactly eight children.
@@ -413,7 +467,7 @@ it is possible to simply update the old node with the new position, in case the 
 This is the case when the new point is within the same cell as the old point.
 The tree is first traversed once to check if there exists such a node in the search radius.
 If such a node is found, the old node is updated and the new point is not inserted.
-If such a node is not found, the old node is deleted and the new point is inserted.
+If such a node is not found, the old node is deleted as by~\cite{finkel_quad_1974} and the new point is inserted.
 
 
 \section{Detecting Primitives using RANSAC}
@@ -430,28 +484,6 @@ transforming the points from world space to screen space is required.
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
 All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
 
-\subsubsection{Coordinate Systems}\label{sec:coordinate-systems}
-In OpenGL rendering, five coordinate systems are commonly used, as illustrated in figure~\ref{fig:coordinate-systems}.
-In these coordinate systems, coordinates are relative to:
-\begin{enumerate}
-    \item the objects origin (\textit{Local Space})
-    \item the worlds origin (\textit{World Space})
-    \item the cameras origin (\textit{View Space})
-    \item the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 in all dimensions (frustum).
-    Coordinates outside the frustum are clipped.
-    Perspective projection can be applied here, more details in the next subsection.
-    \item the screen (\textit{Screen Space})  with the origin in the bottom left corner of the screen
-\end{enumerate}
-To transform vertices between these systems, their positions are multiplied with a corresponding transformation matrix.
-One exception is the viewport transformation,
-which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=\linewidth]{images/coordinate_systems}
-    \caption{Coordinate systems}
-    \label{fig:coordinate-systems}
-\end{figure}
 
 \subsubsection{Perspective Projection}\label{sec:perspective-projection}
 In the real world, objects appear smaller the further away they are from the viewer.
@@ -510,12 +542,15 @@ The fragment shader then outputs the color of the pixel by setting the \texttt{o
 Before the final color is written to the framebuffer,
 a depth test is performed to determine if the pixel is visible or covered by other pixels from other primitives.
 
+\subsubsection{Triangle Meshes}
+todo
+
 \subsection{Rendering planes}
 The RANSAC algorithm provides the parameterization of any detected plane using a normal vector $n$ and the point $p$ relative the worlds origin.
 Using OpenGL, a plane can be rendered by creating two triangles composed of 3 vertices each, with two corner vertices shared between the triangles.
-To render a plane from the parameterization, one can first find any two vectors $u$ and $v$
+To render a plane from the parameterization, one can first find two arbitrary vectors $u$ and $v$
 that are perpendicular to each-other and to the normal vector $n$.
-Using $u$ and $v$, the four vertices of the plane can then be calculated by adding and subtracting $u * size / 2$ and $v * size / 2$ from the point $p$.
+Using $u$ and $v$, the four corner vertices of the plane can then be calculated by adding and subtracting $u * size / 2$ and $v * size / 2$ from the point $p$.
 
 \paragraph{Calculating an arbitrary perpendicular vector}
 The cross product of two vectors $a$ and $b$ is a vector that is perpendicular to both $a$ and $b$,
@@ -574,14 +609,3 @@ Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm appli
 
 \parencite{graham_efficient_1972, andrew_another_1979}
 
-%\subsection{Preparing the data on the CPU}
-%
-%\subsubsection{Restraining the primitives}
-%
-%\paragraph{Cross-section => Floor and Walls}
-%
-%\paragraph{Using a bounding box / extend of points}
-%
-%\subsubsection{Building a mesh}
-%
-%\subsection{Rendering on the GPU (shaders)}
