@@ -12,12 +12,17 @@ The RANSAC algorithm is then applied to the point cloud to detect geometric prim
 
 \subsection{ARCore Depth APIs}
 
+Google ARCore~\parencite{google_llc_arcore_doc} is an SDK for developing augmented reality applications on Android and iOS devices.
+It provides a wide range of features, such as motion tracking, environmental understanding, and light estimation.
+For the purpose of this project, it is used to access depth information from the camera in form of depth images.
 
-Google ARCore provides two APIs to access depth information: the Depth API and the Raw Depth API\@.
-Both APIs work by estimating depth information from a sequence of monocular camera images using depth-from-motion techniques.
-Depth data becomes available when the user moves their device and Google claims that the algorithm
-can get accurate results from 0 to 65 meters away, with best results between 0.5 and 5 meters.
-The technical details of are further discussed in section~\ref{sec:technical-background-depth-from-motion}.
+Google ARCore provides two APIs to access depth information -- the Depth API and the Raw Depth API\@.
+Both APIs work by estimating depth information from a sequence of monocular camera images using
+a technique called \texttt{depth-from-motion}.
+When the user moves their device, the system takes a sequence of images and estimates the depth information from the differences between these images.
+The technical details of this system are further discussed in section~\ref{sec:technical-background-depth-from-motion}.
+Google claims that that one "can get accurate results from 0 to 65 meters away,
+with best results between 0.5 and 5 meters."~\parencite{google_llc_arcore_doc}
 
 Both the Raw Depth API and Full Depth API provide depth information for a given frame of a camera image using depth images, but they differ in the level of detail they provide:
 
@@ -28,7 +33,6 @@ The confidence image indicates the reliability of the depth information for each
 In contrast, the Full Depth API provides a single depth image, where each pixel has a depth value.
 To achieve this, values for pixels without depth information are interpolated.
 No confidence image is provided.
-
 \begin{figure}[ht!]
     \centering
     % First row
@@ -61,13 +65,10 @@ No confidence image is provided.
     \caption{Full Depth vs. Raw Depth}
     \label{fig:depth-api-images}
 \end{figure}
-
-
-The Depth API is preferred in cases where it is crucial to have a depth value for every pixel, such as calculating if an object should be occluded by the scene in an AR application,
+APIs have their use cases --
+the Depth API is preferred in cases where it is crucial to have a depth value for every pixel, such as calculating if an object should be occluded by the scene in an AR application,
 while the Raw depth API is preferred if accuracy of the depth information is crucial.
 As accuracy is crucial for primitive detection and depth information for every pixel is not required, the Raw Depth API is used in this project.
-
-\parencite{google_llc_arcore_doc}
 
 \subsection{Technical Background: Depth from Motion}\label{sec:technical-background-depth-from-motion}
 Depth from motion is a technique developed by Google that estimates depth information from a sequence of monocular camera images
@@ -95,9 +96,9 @@ they use an invalidation step, which removes points that are likely to be incorr
 This step also provides a confidence value, which is later used in the interpolation step.
 Triangulation is used to compute a sparse depth map based on the disparity maps.
 
-The missing values in the sparse depth maps are then interpolated using a variation of an algorithm called the bilateral solver,
+The missing values in the sparse depth maps are then interpolated using a variation of an algorithm called the bilateral solver (see figure~\ref{fig:depth-from-motion-interpolation}),
 which yields an intermediate data structure known as a bilateral depth grid.
-This grid is a structured representation of depth information that can be converted into a full depth map on demand.
+This grid is a structured representation of depth information that can be converted into a full depth map on demand,
 assessable through the Full Depth API\@.
 
 \begin{figure}[ht!]
@@ -114,17 +115,17 @@ assessable through the Full Depth API\@.
         \caption{Interpolated}
     \end{subfigure}%
     \caption{Interpolation with Bilateral Solver}
+    \label{fig:depth-from-motion-interpolation}
 \end{figure}
 
 From the paper it is unclear, which part of the pipeline are omitted in the Raw Depth API,
 but it is reasonable to assume that the Raw Depth API accesses the sparse depth map and confidence values before the interpolation step.
 
-\cite{valentin_depth_2018}
-
 
 \section{Building the point cloud}
-As RANSAC is a point-based algorithm, the depth image has to be converted to a point cloud.
-The process consists of three steps.
+With the depth image and confidence image collected from the Raw Depth API,
+the next step is to convert the depth image into a point cloud, as RANSAC is a point-based algorithm.
+The process consists of three steps:
 \begin{enumerate}
     \item Filtering low confidence points
     \item Transforming depth image pixels to world coordinate points
@@ -139,7 +140,9 @@ Filtering out low confidence points early in the pipeline will also improve perf
 as fewer points need to be processed in the following steps.
 
 \subsection{Transforming depth image pixels to world coordinate points}
-Before inserting points into the point cloud, the depth images values from the depth images
+The Depth API provides depth images where each pixel holds the distance
+from the camera in millimeters.
+Before inserting points into the point cloud, the pixel values of the depth image
 first need to be converted into 3-dimensional coordinates relative to a fixed origin in the world.
 This section will first provide a brief overview of the mathematical concepts required to understand the transformation process.
 Then, the process of transforming a point from the depth image into world space will be explained.
@@ -154,7 +157,8 @@ Then, the process of transforming a point from the depth image into world space 
 In computer graphics matrices are used to represent geometric transformations like translation, scaling, rotation,
 shearing, reflection and projection.
 While it is out of scope to cover all of these transformations in detail,
-this section will use the example of the translation to explain the concepts of transformations and homogenous coordinates.
+this section will use the example of the translation to explain the concepts of
+transformations and homogenous coordinates based on~\cite{dorner_virtual_2019}.
 
 To apply transformations to a point, the points is represented in homogenous coordinates,
 which is a 4x1 matrix with the fourth $w$ element set to 1.
@@ -208,8 +212,6 @@ Graphics Processing Unit's (GPU's) also contain hardware implementation of 4x4 m
 which further increases the performance of matrix operations over other methods.
 Transformation matrices can also be inverted ($M^{-1}$) to apply the inverse transformation, or in other words 'undo' the transformation.
 
-\cite{dorner_virtual_2019}
-
 \subsubsection{Coordinate Systems and Basis Change}
 
 Different coordinate systems, also known as spaces, are commonly used to represent points in space.
@@ -221,9 +223,9 @@ the movement of the car needs to be accounted for in the calculation for the cam
 However, by using the local coordinate system of the car, where all points are relative to the car itself (local space),
 calculations can be simplified.
 
-This section will provide a brief mathematical overview of coordinate systems and how to transform points between them.
-As examples, the world and local space will be used, as they are required to unproject the depth image into world space.
-The usage of these coordinate systems in context of the OpenGL rendering pipeline will also be covered in section~\ref{sec:coordinate-systems}.
+This section provides an overview of coordinate systems and the process of transforming points between systems, as detailed by~\cite{dorner_virtual_2019}.
+%As examples, the world and local space are used, as they are required to unproject the depth image into world space.
+%The usage of these coordinate systems in context of the OpenGL rendering pipeline will also be covered in section~\ref{sec:coordinate-systems}.
 
 In the context of linear algebra,
 a basis of a $n$ dimensional vector space is a set of $n$ vectors that are both linearly independent
@@ -252,10 +254,10 @@ Note that these are described as relative to $K$.
 A 4x4 transformation matrix $M'$ that transforms points from $K'$ to $K$ is then constructed as follows:
 \begin{equation}
     M' = \begin{bmatrix}
-            \vec{u_x} & \vec{v_x} & \vec{w_x} & O_x \\
-            \vec{u_y} & \vec{v_y} & \vec{w_y} & O_y \\
-            \vec{u_z} & \vec{v_z} & \vec{w_z} & O_z \\
-            0         & 0         & 0         & 1
+             \vec{u_x} & \vec{v_x} & \vec{w_x} & O_x \\
+             \vec{u_y} & \vec{v_y} & \vec{w_y} & O_y \\
+             \vec{u_z} & \vec{v_z} & \vec{w_z} & O_z \\
+             0         & 0         & 0         & 1
     \end{bmatrix}
 \end{equation}
 
@@ -270,12 +272,8 @@ A transformation matrix, that transforms points from local space to world space 
     p_w = T_{wl} \cdot p_l
 \end{equation}
 
-\cite{dorner_virtual_2019}
-
-\subsubsection{Common Coordinate Systems}\label{sec:coordinate-systems}
-To further clarify the concept of coordinate systems, this section provides an overview of the most common coordinate systems,
-specifically in the context of the OpenGL rendering pipeline, which will later be used to render the primitives.
-In OpenGL rendering, five coordinate systems are commonly used, as illustrated in figure~\ref{fig:coordinate-systems}.
+\paragraph{Common Coordinate Systems}\label{sec:coordinate-systems}
+The following coordinate systems are commonly used in computer graphics, as illustrated in figure~\ref{fig:coordinate-systems}.
 In these coordinate systems, coordinates are relative to:
 \begin{enumerate}
     \item the objects origin (\textit{Local Space})
@@ -355,21 +353,21 @@ Subsequently, the point is transformed from the cameras local space into world s
 For simplicity and to avoid confusion when transforming into different directions, the second approach is used going forward.
 
 
-To transform the pixel, first the depth value is used to calculate the point in local space relative to the camera $K_l$ using the camera intrinsics.
-The intrinsics can be retrieved from the API using \texttt{frame.getCamera().getTextureIntrinsics()} method.
+The depth value is used to calculate the point in local space relative to the camera $K_l$ using the camera intrinsics.
+The intrinsics can be retrieved from the API using the method \texttt{frame.getCamera().getTextureIntrinsics()}.
 However, this method returns the intrinsics of the camera image, which differs from the depth image, as the depth image usually has a lower resolution.
-To calculate the focal length $f$ and camera center $c$ from the provided intrinsics $I$ and the depth image $D$,
+To calculate the focal length $f$ and camera center $c$ from the provided intrinsics $K$, depth image $D$ and camera image dimensions $x_{Dim}, y_{Dim}$,
 the provided focal length and principal point are scaled by the ratio of the dimensions of the depth image and the camera image:
 \begin{equation}
     S = \begin{bmatrix}
-            \frac{\dim_x(D)}{I_{xDim}} & 0\\[8pt]
-            0                          & \frac{\dim_y(D)}{I_{yDim}}
+            \frac{\dim_x(D)}{x_{Dim}} & 0\\[8pt]
+            0                         & \frac{\dim_y(D)}{y_{Dim}}
     \end{bmatrix}\\
-    f = S \cdot I_f \\
-    c = S \cdot I_c
+    f = S \cdot K_f \\
+    c = S \cdot K_c
 \end{equation}
 
-These values are then used to unproject the point into local space relative to the camera:
+These values are then used to unproject the point into local space relative to the camera $K_l$ using the equation
 \begin{equation}
     p_l = \begin{pmatrix}
               d \cdot (x - c_x) / f_x \\
@@ -378,6 +376,7 @@ These values are then used to unproject the point into local space relative to t
               1
     \end{pmatrix}
 \end{equation}
+as evident from figure~\ref{fig:intrinsics}.
 
 As the resulting point is in a local space relative to the camera $K_l$, it needs to be transformed into world space $K_w$.
 To transform it into world space the model matrix is retrieved by calling
@@ -388,18 +387,16 @@ By multiplying the model matrix $T_{wl}$ with $p_l$, the point is transformed in
     p_w = T_{wl} \cdot p_l
 \end{equation}
 
-\cite{google_llc_codelab_raw_depth, google_llc_arcore_doc}
-
 \subsection{Inserting new points into the point cloud}
 
-The final step involves adding new points to the point cloud.
+With all pixels from the depth image transformed to world coordinates, the final step involves adding these points to the point cloud.
 However, simply storing a list of all points and appending new data to it is not feasible.
 As a new depth image is captured every frame, the number of points would grow endlessly.
-This approach would also result in a massive number of points representing the same real-world point,
+This approach would also result in a massive number of points representing the same point on real-world geometry,
 but with slightly different position values,
-as subsequent depth images will show the same real-world point from different angles, with depth values varying slightly.
+as subsequent depth images will show the same real-world geometry from different angles, with depth values varying slightly.
 To address this issue, a spatial data structure that partitions the space into smaller regions and
-allows us to store only one point per region can be used.
+allows to store only one point per region can be used.
 One possible approach is to use a three-dimensional grid, where each cell represents a region in space.
 Alternatively, a more advanced approach involves utilizing a spatial data structure such as an octree,
 which can provide improved performance.
@@ -413,7 +410,7 @@ insertion and traversal in logarithmic time.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.75\textwidth]{images/octree}
+    \includegraphics[width=0.65\textwidth]{images/octree}
     \caption{Octree}
     \label{fig:octrree}
 \end{figure}
@@ -445,9 +442,16 @@ In the case of planes, this will lead to points in multiple cells across the nor
 (increasing the thickness of the plane).
 The RANSAC algorithm will then detect multiple planes instead of one.
 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.35\linewidth]{images/aliasing}
+    \caption{Example of aliasing, distance between the line and cell centers varies across cells}
+    \label{fig:aliasing}
+\end{figure}
+
 Quantization might also lead to worse detection results for surface that do not align with the axis of the octree.
 For example, a plane that is tilted by a couple of degrees will lead to aliasing,
-meaning that the distance between the points and the fitted plane will vary across the plane.
+meaning that the distance between the points and the fitted plane will vary across the plane, as demonstrated in figure~\ref{fig:aliasing}.
 
 \subsubsection{Octree with neighborhood condition}
 %todo
@@ -512,7 +516,6 @@ transforming the points from world space to screen space is required.
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
 All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
 
-
 \subsubsection{Perspective Projection}\label{sec:perspective-projection}
 In the real world, objects appear smaller the further away they are from the viewer.
 To simulate this effect in 3D rendering, perspective projection is used.
@@ -570,9 +573,6 @@ The fragment shader then outputs the color of the pixel by setting the \texttt{o
 Before the final color is written to the framebuffer,
 a depth test is performed to determine if the pixel is visible or covered by other pixels from other primitives.
 
-\subsubsection{Triangle Meshes}
-todo
-
 \subsection{Rendering planes}
 The RANSAC algorithm provides the parameterization of any detected plane using a normal vector $n$ and the point $p$ relative the worlds origin.
 Using OpenGL, a plane can be rendered by creating two triangles composed of 3 vertices each, with two corner vertices shared between the triangles.
@@ -591,7 +591,7 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
 
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.6\linewidth]{images/renderedPlane}
+    \includegraphics[width=0.5\linewidth]{images/renderedPlane}
     \caption{Rendered RANSAC plane with size of 2*2m}
 \end{figure}
 
