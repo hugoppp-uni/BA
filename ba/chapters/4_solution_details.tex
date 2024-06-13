@@ -279,66 +279,112 @@ In these coordinate systems, coordinates are relative to:
     \item the objects origin (\textit{Local Space})
     \item the worlds origin (\textit{World Space})
     \item the cameras origin (\textit{View Space})
-    \item the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 (normalized device coordinates) in all dimensions (frustum).
-    Coordinates outside the frustum are clipped.
-    Perspective projection can be applied here, more details in the next subsection.
-    \item the screen (\textit{Screen Space})  with the origin in the bottom left corner of the screen
+    \item the bottom left corner of the screen in 2D (\textit{Screen Space})
 \end{enumerate}
+Note that in rendering, an intermediate coordinate system between view and screen space is often used (clip space),
+which is omitted here for clarity.
+
 To transform points between these systems, their positions are multiplied with a corresponding transformation matrix.
-One exception is the viewport transformation,
-which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
+To improve performance, these matrices are often combined to a singular matrix, called the MVP-Matrix,
+that transforms points from local space to screen space. \cite{de_vries_learn_2020}
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=\linewidth]{images/coordinate_systems}
+    \includegraphics[width=0.85\linewidth]{images/coordinateSystemsAdjusted}
     \caption{Coordinate systems}
     \label{fig:coordinate-systems}
 \end{figure}
 
-\cite{de_vries_learn_2020}
-
-
-\subsubsection{Camera Intrinsics and Perspective Projection}
+\subsubsection{Perspective Projection and Camera Intrinsics}
 In the real world, objects appear smaller the further away they are from the viewer.
 The same concept applies to images captured by cameras.
-
+To illustrate this, consider a simpel pinhole camera model, as shown in figure~\ref{fig:pinhole-camera-model}.
 \begin{figure}[h!]
     \centering
+    \includegraphics[width=0.45\linewidth]{images/pinhole}
+    \caption{Pinhole camera model}
+    \label{fig:pinhole-camera-model}
 \end{figure}
+The camera is represented as a box with a small hole on one side.
+Light rays from the scene pass through the hole and project an inverted image onto the opposite side of the box.
+The red lines each represent the light ray of the top and bottom of the tree.
+The closer the tree is to the camera, the smaller it needs to be to fit inside the two rays,
+or in other words to appear the same size on the image plane.
+This is the principle of perspective projection and can be achieved by dividing the
+$x$ and $y$ coordinates of a point by its $z$ coordinate.
+During this process, the z coordinate is lost and can't be recovered. \cite{szeliski_computer_nodate}
+\begin{equation}
+    P_s = \begin{bmatrix}
+              x/z \\
+              y/z \\
+              1
+    \end{bmatrix}
+\end{equation}
+
+This however, does not account for the geometry of the camera itself -- the camera intrinsics.
+These intrinsics are a set of parameters that describe the camera's geometry and are used to calculate the projection.
+The two most important parameters are the focal length $f$ and the image center $c$, as shown in figure~\ref{fig:intrinsics-3d}.
+
 
 \begin{figure}[ht!]
     \centering
     \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
         \includegraphics[width=1\linewidth]{images/intrinsics}
         %    source: szeliski_computer_nodate
-        \caption{Overview of intrinsic parameters in 3D}
+        \caption{Geometry of a camera with an image plane height $H$, width $W$, focal length $f$, and principal point $c$.}
+        \label{fig:intrinsics-3d}
     \end{subfigure}%
     \hspace{0.05\textwidth} % Added space between subfigures
     \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
         \resizebox{\linewidth}{!}{
             \input{images/intrinsics2d}
         }
-    \caption{Point $A$ projected onto the image plane in $y$-direction}
+        \caption{Projection of an observed point $A$ onto the image plane in the $y$-direction.}
+        \label{fig:intrinsics-2d}
     \end{subfigure}%
     \caption{Camera intrinsics}
     \label{fig:intrinsics}
 \end{figure}
 
+The focal length $f$ is the distance between the image plane and the pinhole of the camera.
+The image center $c$ (also called principal point) is the point where the principal axis $z_c$
+intersects the image plane, denoted in pixel coordinates.
+Figure~\ref{fig:intrinsics-2d} shows the projection of an observed point $A$ onto the image plane.
+Note that the image plane is displayed in the $-z_c$ direction, as opposed to $+z_c$ direction.
+It shows how focal length $f$ affects the $y$-coordinate of the projected point.
+\cite{szeliski_computer_nodate, google_llc_arcore_doc, kris_kitani_computer_2017}
+This can be simulated by using ones fingers to form a square that represents a virtual
+image plane and moving it closer or farther to the eye.
+The farther away the square is (higher focal length), the less field of view the square covers.
 
-\cite{szeliski_computer_nodate}
+Mathematically, the projection is often represented as a matrix, called the calibration matrix
+\begin{equation}
+    K = \begin{bmatrix}
+            f_x & 0   & c_x \\
+            0   & f_y & c_y \\
+            0   & 0   & 1
+    \end{bmatrix}
+\end{equation}
+with independent focal lengths $f_x$ and $f_y$ to account for aspect ratios other than 1:1.
+As different focal lengths in each dimension do not reflect the real geometry of a camera,
+a more intuitive way to understand different focal lengths can be used by introducing the aspect ratio a:
+\begin{equation}
+    K = \begin{bmatrix}
+            f & 0  & c_x \\
+            0 & af & c_y \\
+            0 & 0  & 1
+    \end{bmatrix}
+\end{equation}
+\parencite{szeliski_computer_nodate}
+
+
+
 
 \subsubsection{Applying the transformation to the depth pixels}
-"Given point $A$ on the observed real-world geometry and a 2D point $a$ representing the same point in the depth image,
-the value given by the Depth API at $a$ is equal to the length of $CA$ projected onto the principal axis.
-This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$."~\parencite{google_llc_arcore_doc}
-%See figure~\ref{fig:diagram-depth-values}.
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.75\textwidth]{images/depth-values-diagram}
-%    \caption{Diagram of depth values from the Depth API}
-%    \label{fig:diagram-depth-values}
-%\end{figure}
-This can be seen as the pixels being in screen space, as shown in figure~\ref{fig:coordinate-systems}.
+With the mathematical concepts clarified, the transformation of depth image pixels into world space can be explained.
+First, it is necessary to understand how the depth values are represented in the depth image.
+
+In terms of coordinate systems, the depth values are in screen space, as shown in figure~\ref{fig:coordinate-systems}.
 To convert these points into world space, the transformations need to be applied backwards:
 \begin{enumerate}
     \item From screen space to view space (`unprojecting`)
@@ -352,6 +398,11 @@ relative to the camera, as defined by the camera's position, up and look vector.
 Subsequently, the point is transformed from the cameras local space into world space using the cameras model matrix.
 For simplicity and to avoid confusion when transforming into different directions, the second approach is used going forward.
 
+The first step is to unproject the pixels from screen space to the cameras local space $K_l$, as explained by~\cite{google_llc_codelab_raw_depth, google_llc_arcore_doc}.
+Referring to figure~\ref{fig:intrinsics} and
+"given point $A$ on the observed real-world geometry and a 2D point $a$ representing the same point in the depth image,
+the value given by the Depth API at $a$ is equal to the length of $CA$ projected onto the principal axis.
+This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$."~\parencite{google_llc_arcore_doc}
 
 The depth value is used to calculate the point in local space relative to the camera $K_l$ using the camera intrinsics.
 The intrinsics can be retrieved from the API using the method \texttt{frame.getCamera().getTextureIntrinsics()}.
@@ -542,6 +593,28 @@ it results in the desired perspective scaling effect.
 Points closer to the viewer have a smaller $w$ and are less affected by the divide,
 while points further away have a larger $w$ and are reduced in size more significantly
 
+\subsubsection{Polygon Meshes}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.70\textwidth]{images/Mesh_overview}
+    \caption{Mesh overview}
+    \label{}
+\end{figure}
+
+
+\cite{dorner_virtual_2019}
+
+
+%
+
+%the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 (normalized device coordinates) in all dimensions (frustum).
+%Coordinates outside the frustum are clipped.
+%Perspective projection can be applied here, more details in the next subsection.
+
+%One exception is the viewport transformation,
+%which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
+
 \subsubsection{Shaders}\label{subsec:shaders}
 Shaders are isolated programs that run on the GPU and can be used to render objects.
 In OpenGL, they are written in the OpenGL Shading Language (GLSL).
@@ -600,11 +673,19 @@ To constrain the primitive to the area where the points are located, multiple ap
 One would be to calculate the maximum and minimum values of the points in each dimension and use these to create a bounding box for the plane.
 A more sophisticated approach would be to calculate the convex hull of the points to constrain the plane.
 
+\paragraph{Convex Hull}
 The convex hull of a set of points is the smallest convex polygon that contains all the points. %TODO: Citation needed
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.35\linewidth]{images/ConvexHull}
+    \caption{Convex Hull}
+\end{figure}
 
 To render a plane constrained by the convex hull,
 a triangle mesh can be created with triangles consisting of two subsequent triangles of the hull vertices and the centroid of the hull as the third vertex each.
-Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm applied to a real dataset of a plane.
+Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm implemented into the application.
+Prior to detecting the planes, the smartphone has been moved around the scene to capture the points from different angles.
 
 \begin{figure}[ht!]
 
