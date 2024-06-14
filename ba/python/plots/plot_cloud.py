@@ -46,5 +46,7 @@ def plot_ply(filename,
 
 
 if __name__ == '__main__':
-    plot_ply('cube_points/data1/cube_points_04.ply', lambda ax, fig: ax.view_init(7, -75))
-    # visualization.draw_geometries([cloud])  # Visualize point cloud
+    filename = '../http_server/data.ply'
+    # plot_ply(filename, lambda ax, fig: ax.view_init(7, -75))
+    cloud = get_pts(filename)
+    visualization.draw_geometries([cloud])  # Visualize point cloud

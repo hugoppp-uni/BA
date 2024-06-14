@@ -160,6 +160,11 @@ While it is out of scope to cover all of these transformations in detail,
 this section will use the example of the translation to explain the concepts of
 transformations and homogenous coordinates based on~\cite{dorner_virtual_2019}.
 
+
+%TODO Homogenous coordinates explaition
+%which are an extension of the Cartesian coordinate system.
+%In homogeneous coordinates, each point in 3D space is represented by four coordinates instead of three: $(x, y, z, w)$.
+
 To apply transformations to a point, the points is represented in homogenous coordinates,
 which is a 4x1 matrix with the fourth $w$ element set to 1.
 
@@ -567,43 +572,21 @@ transforming the points from world space to screen space is required.
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
 All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
 
-\subsubsection{Perspective Projection}\label{sec:perspective-projection}
-In the real world, objects appear smaller the further away they are from the viewer.
-To simulate this effect in 3D rendering, perspective projection is used.
-Perspective projection is achieved through the use of homogeneous coordinates,
-which are an extension of the Cartesian coordinate system.
-In homogeneous coordinates, each point in 3D space is represented by four coordinates instead of three: $(x, y, z, w)$.
-
-The transformation from 3D space to a 2D projection is handled by a projection matrix.
-This matrix is designed to map the viewable scene, defined within a specified frustum, to a normalized cube known as clip space.
-The frustum is a truncated pyramid shape that represents the volume of space visible through the camera lens.
-The parameters of the frustum are defined by the field of view, aspect ratio, and near and far clipping planes,
-as illustrated by figure~\ref{fig:perspective}
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.50\textwidth]{images/perspective}
-    \caption{Perspective Projection}
-    \label{fig:perspective}
-\end{figure}
-
-"The projection matrix [\ldots] also manipulates the w value of each vertex coordinate in such a way
-that the further away a vertex coordinate is from the viewer, the higher this w component becomes"~\parencite{de_vries_learn_2020}.
-When the coordinates are later divided by $w$ (a process known as the perspective divide), %TODO QUOTAION NEEDED
-it results in the desired perspective scaling effect.
-Points closer to the viewer have a smaller $w$ and are less affected by the divide,
-while points further away have a larger $w$ and are reduced in size more significantly
-
 \subsubsection{Polygon Meshes}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.70\textwidth]{images/Mesh_overview}
     \caption{Mesh overview}
-    \label{}
+    \label{fig:mesh-overview}
 \end{figure}
 
-
-\cite{dorner_virtual_2019}
+Rendering an object is achieved by creating a polygon mesh, which is a collection of vertices that define the faces of it.
+The vertices are connected by edges to form polygons, which in turn create the surface of the object.
+Polygons can be of any shape, but need to be planar, meaning that all vertices lie on the same plane.
+The most commonly used type of polygon is the triangle, as it is the simplest polygon that can define a surface and is guaranteed to be planar.
+The graphics pipeline is also optimized for triangles, as they are easy to rasterize and interpolate.
+Figure~\ref{fig:mesh-overview} shows the relationship between vertices, edges, and polygons in a mesh. \cite{dorner_virtual_2019}
 
 
 %
