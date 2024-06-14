@@ -599,13 +599,53 @@ Figure~\ref{fig:mesh-overview} shows the relationship between vertices, edges, a
 %which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
 
 \subsubsection{Shaders}\label{subsec:shaders}
+
 Shaders are isolated programs that run on the GPU and can be used to render objects.
 In OpenGL, they are written in the OpenGL Shading Language (GLSL).
-
 Two types of shaders are required to render an object: Vertex shaders and fragment shaders.
+See figure~\ref{fig:graphics-pipeline} for an overview of the graphics pipeline.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.70\textwidth]{images/graphics-pipeline}
+    \caption{Graphics Pipeline. Blue boxes represent programmable stages. The Geometry Shader is optional and not covered in this thesis.}
+    \label{fig:graphics-pipeline}
+\end{figure}
 
 Vertex shaders are executed for each vertex defined in the vertex buffer, which is defined on the CPU and
 passed to the GPU by copying the data to the GPU's memory, e.g.\ by using the \texttt{glBufferData} function.
+The only required output of the vertex shader is the position of the vertex in normalized device coordinates (NDC).
+In OpenGL, NDC range from -1 to 1 in all dimensions:
+\begin{equation}
+    (x, y, z) \in [-1, 1] \times [-1, 1] \times [-1, 1]
+\end{equation}
+Note that in other implementations, the cube might be defined with $z \in [0, 1]$.
+All coordinates outside this cube are considered outside the view of the camera and subsequently clipped,
+which means they will not be rendered.
+The output position in NDC is passed back to the pipeline by assigning it to the \texttt{gl\_Position}
+variable using homogeneous coordinates.
+Other vertex attributes, such as color, texture coordinates, or normals
+can also be passed by defining \texttt{out} variables in the vertex shader.
+
+The graphics pipline then uses the NDC and performs the perspective divide,
+which divides the $x$, $y$, and $z$ coordinates by the $w$ coordinate of the homogenous coordinates,
+resulting in a reduction of dimension from 4 to 3.
+Then, the viewport transformation, which maps the NDC to screen space,
+parameterized by the screen width and height, is performed.
+Rasterization and interpolation of the vertex positions alongside all other vertex attributes
+is then performed across the primitive.
+The resulting elements are called fragments.
+The fragment shader is then executed for each rasterized fragment of the primitive and is expected to
+output a color by setting the \texttt{out vec4 FragColor} variable.
+The screen position of the fragment and all variables that were passed as \texttt{out} from the
+vertex shader can also be accessed in the fragment shader, with their values interpolated across the primitive.
+This allows for smooth color transitions or texture mapping across the primitive.
+
+Before the final color is written to the framebuffer,
+a depth test is performed to determine if the fragment is visible or covered by fragments from other primitives.
+
+
+\subsubsection{Perspective Projection in OpenGL}
+
 A vertex shader can be used to transform the vertices from model space to screen space using the
 model, view, and projection matrices.
 To achieve this, the Model-View-Projection matrix (MVP) matrix can be passed as a \textit{uniform} to the vertex shader,
