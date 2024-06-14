@@ -300,7 +300,7 @@ that transforms points from local space to screen space. \cite{de_vries_learn_20
     \label{fig:coordinate-systems}
 \end{figure}
 
-\subsubsection{Perspective Projection and Camera Intrinsics}
+\subsubsection{Perspective Projection and Camera Intrinsics}\label{sec:perspective-projection}
 In the real world, objects appear smaller the further away they are from the viewer.
 The same concept applies to images captured by cameras.
 To illustrate this, consider a simpel pinhole camera model, as shown in figure~\ref{fig:pinhole-camera-model}.
@@ -646,28 +646,47 @@ a depth test is performed to determine if the fragment is visible or covered by 
 
 \subsubsection{Perspective Projection in OpenGL}
 
-A vertex shader can be used to transform the vertices from model space to screen space using the
-model, view, and projection matrices.
-To achieve this, the Model-View-Projection matrix (MVP) matrix can be passed as a \textit{uniform} to the vertex shader,
-which means it is the same for all vertices.
-The MVP matrix is the result of multiplying the model matrix, view matrix, and projection matrix.
-As the MVP matrix is the same for all vertices of an object, it can be calculated on the CPU and passed to the GPU as a uniform.
-The vertex position is then multiplied by the MVP matrix to transform it into clip space.
-The resulting position is then passed to the fragment shader by assigning it to the \texttt{gl\_Position} variable.
+As discussed in section~\ref{sec:perspective-projection}, perspective projection is used
+to simulate the effect of objects appearing smaller the further away they are from the viewer.
+This transformation from 3D space to a 2D projection is handled by a projection matrix.
+In OpenGL rendering however, the projection matrix does not directly transform from view-space to screen-space.
+Instead, an intermediate coordinate system known as clip space is introduced, as shown in figure~\ref{fig:coordinate-systems-with-clip-space}.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\linewidth]{images/coordinate_systems}
+    \caption{Extension of coordinate systems by clip space}
+    \label{fig:coordinate-systems-with-clip-space}
+\end{figure}
+Coordinates in clip space are in normalized device coordinates (NDC), which is a cube
+with coordinates ranging from -1 to 1 in all dimensions, as discussed in the previous section.
 
+%A vertex shader can be used to transform the vertices from model space to screen space using the
+%model, view, and projection matrices.
+%To achieve this, the Model-View-Projection matrix (MVP) matrix can be passed as a \textit{uniform} to the vertex shader,
+%which means it is the same for all vertices.
+%The MVP matrix is the result of multiplying the model matrix, view matrix, and projection matrix.
+%As the MVP matrix is the same for all vertices of an object, it can be calculated on the CPU and passed to the GPU as a uniform.
+%The vertex position is then multiplied by the MVP matrix to transform it into clip space.
+
+The projection matrix defines a frustum, which, depending on the projection type, can be a truncated pyramid or a cube,
+that defines the volume of space visible through the camera lens.
+In the case of the perspective projection, the frustum is a truncated pyramid, as shown in figure~\ref{fig:perspective}.
+The parameters of the frustum are defined by the field of view, aspect ratio, and near and far clipping planes,
+as illustrated by figure~\ref{fig:perspective}
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.70\textwidth]{images/graphics-pipeline}
-    \caption{Graphics Pipeline. Blue boxes represent programmable stages. The Geometry Shader is optional and not covered in this thesis.}
-    \label{fig:graphics-pipeline}
+    \includegraphics[width=0.50\textwidth]{images/perspective}
+    \caption{Frustrum defined by perspective projection}
+    \label{fig:perspective}
 \end{figure}
+Multiplication of the vertex position with the projection matrix transforms the vertex into clip space.
+"The projection matrix [\ldots] also manipulates the w value of each vertex coordinate in such a way
+that the further away a vertex coordinate is from the viewer, the higher this w component becomes"~\parencite{de_vries_learn_2020}.
+When the coordinates are later divided by $w$ in the perspective divide,
+it results in the desired perspective scaling effect.
+Points closer to the viewer have a smaller $w$ and are less affected by the divide,
+while points further away have a larger $w$ and are reduced in size more significantly.
 
-
-The graphics pipeline then rasterizes and interpolates the vertex positions alongside all other vertex attributes
-across the primitive, which are then passed to the fragment shader, which is executed for each pixel the primitive covers.
-The fragment shader then outputs the color of the pixel by setting the \texttt{out vec4 FragColor} variable.
-Before the final color is written to the framebuffer,
-a depth test is performed to determine if the pixel is visible or covered by other pixels from other primitives.
 
 \subsection{Rendering planes}
 The RANSAC algorithm provides the parameterization of any detected plane using a normal vector $n$ and the point $p$ relative the worlds origin.
