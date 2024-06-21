@@ -734,20 +734,44 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
     \caption{Rendered RANSAC plane with size of 2*2m}
 \end{figure}
 
-\subsection{Constraining the primitives to the area where the points are located}
-To constrain the primitive to the area where the points are located, multiple approaches can be used.
-One would be to calculate the maximum and minimum values of the points in each dimension and use these to create a bounding box for the plane.
-A more sophisticated approach would be to calculate the convex hull of the points to constrain the plane.
-
-\paragraph{Convex Hull}
-The convex hull of a set of points is the smallest convex polygon that contains all the points. %TODO: Citation needed
+\subsection{Constraining planes to the area where the points are located}
 
 \begin{figure}[ht!]
     \centering
-    \includegraphics[width=0.35\linewidth]{images/ConvexHull}
-    \caption{Convex Hull}
+    \includegraphics[width=0.9\linewidth]{images/bounding-volumes}
+    \caption{Most commonly used bounding volumes}
 \end{figure}
 
+To constrain the planes to the area where the points are located, a bounding volume can be used.
+A bounding volume is a geometric shape that encloses a set of points or other shapes,
+and is often used to simplify collision detection or culling.
+Common bounding volumes include axis-aligned bounding boxes (AABB), spheres, or oriented bounding boxes (OBB).
+A more complex bounding volume is the convex hull, which is the smallest convex polygon that contains all the points.
+\cite{gabriel_zachmann_geometric_2002}
+A rubber band can be used to illustrate the concept: If a rubber band is stretched around a set of points,
+the convex hull is the shape the rubber band takes, as illustrated in figure~\ref{fig:convex-hull}.
+As the convex hull is the most accurate commonly used bounding volume,
+it will be used for constraining the planes going forward.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.25\linewidth]{images/ConvexHull}
+    \caption{Rubber band analogy for the Convex Hull}
+\end{figure}
+
+\subsubsection{Convex Hull Algorithms}
+There are multiple algorithms to calculate the convex hull of a set of points.
+In~\citeyear{graham_efficient_1972}~\cite{graham_efficient_1972} proposed an algorithm to calculate the convex hull of $n$ points in $O(n \log n)$ time.
+\cite{andrew_another_1979} later proposed a variation of the algorithm in~\citeyear{andrew_another_1979}, which will be explained here.
+More recent algorithms solve the problem in $O(n \log h)$ time, where $h$ is the number of points on the convex hull, but are more complex to implement.
+
+
+
+Andrew's Monotone Chain Algorithm as proposed by~\cite{andrew_another_1979} ...
+
+%todo: Explain the algorithm
+
+\subsubsection{Rendering the plane constrained by the convex hull}
 To render a plane constrained by the convex hull,
 a triangle mesh can be created with triangles consisting of two subsequent triangles of the hull vertices and the centroid of the hull as the third vertex each.
 Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm implemented into the application.
