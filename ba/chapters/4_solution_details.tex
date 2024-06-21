@@ -588,8 +588,29 @@ The most commonly used type of polygon is the triangle, as it is the simplest po
 The graphics pipeline is also optimized for triangles, as they are easy to rasterize and interpolate.
 Figure~\ref{fig:mesh-overview} shows the relationship between vertices, edges, and polygons in a mesh. \cite{dorner_virtual_2019}
 
+Polygon meshes can be represented many ways.
+The simplest representation is a list of vertices, where the vertices are stored in a specific order to form the polygons.
+In OpenGL, this can be achieved by using the \texttt{glDrawArrays} function,
+which takes a buffer of vertices and draws them as triangles.
+The problem with this approach is that in meshes vertices are often shared between multiple polygons,
+as is apparent in figure~\ref{fig:mesh-overview}.
+To render the cube in the figure, only 8 vertices are required,
+but since each of the 6 faces is rendered with two triangle,
+a total of 36 vertices would be required when using this approach.~\cite{dorner_virtual_2019, de_vries_learn_2020}
 
-%
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.60\textwidth]{images/index_buffer}
+    \caption{The concept of indexing. VBO in blue, EBO in green.}
+    \label{fig:index-buffer}
+\end{figure}
+
+A common solution to this problem is to use a data structure known as the indexed face-set, which consists of two lists -- one for the vertices and one for the indices.
+The vertices list contains all unique vertices of the mesh, while the indices list contains the indices of the vertices that form the polygons.
+In OpenGL, this can be achieved by using the \texttt{glDrawElements} function, which requires two buffers to be bound
+-- one for the vertices, commonly referred as VBO (Vertex Buffer Object), and one for the indices, commonly referred as EBO (Element Buffer Object).
+The concept of indexing is illustrated in figure~\ref{fig:index-buffer}.~\cite{dorner_virtual_2019, de_vries_learn_2020}
 
 %the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 (normalized device coordinates) in all dimensions (frustum).
 %Coordinates outside the frustum are clipped.
@@ -599,6 +620,8 @@ Figure~\ref{fig:mesh-overview} shows the relationship between vertices, edges, a
 %which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
 
 \subsubsection{Shaders}\label{subsec:shaders}
+
+This section provides an overview of shaders and their role in the rendering pipeline as detailed by~\cite{de_vries_learn_2020}.
 
 Shaders are isolated programs that run on the GPU and can be used to render objects.
 In OpenGL, they are written in the OpenGL Shading Language (GLSL).
@@ -613,24 +636,26 @@ See figure~\ref{fig:graphics-pipeline} for an overview of the graphics pipeline.
 
 Vertex shaders are executed for each vertex defined in the vertex buffer, which is defined on the CPU and
 passed to the GPU by copying the data to the GPU's memory, e.g.\ by using the \texttt{glBufferData} function.
-The only required output of the vertex shader is the position of the vertex in normalized device coordinates (NDC).
-In OpenGL, NDC range from -1 to 1 in all dimensions:
+This data can contain any attributes of the vertex, such as position, color, texture coordinates, or normals.
+The vertex shader is then executed for each vertex and can be used to transform the vertex position between different coordinate systems,
+or manipulate the vertex attributes on a per-vertex basis.
+To pass data back to the pipeline, the vertex shader can define \texttt{out} variables.
+In case of the vertex position, the output position is passed back to the
+pipeline by assigning it to the \texttt{gl\_Position} variable using homogeneous coordinates.
+OpenGL expects the vertex position to be in normalized device coordinates (NDC),
+which range from -1 to 1 in all dimensions~\cite{dorner_virtual_2019}:
 \begin{equation}
     (x, y, z) \in [-1, 1] \times [-1, 1] \times [-1, 1]
 \end{equation}
 Note that in other implementations, the cube might be defined with $z \in [0, 1]$.
 All coordinates outside this cube are considered outside the view of the camera and subsequently clipped,
 which means they will not be rendered.
-The output position in NDC is passed back to the pipeline by assigning it to the \texttt{gl\_Position}
-variable using homogeneous coordinates.
-Other vertex attributes, such as color, texture coordinates, or normals
-can also be passed by defining \texttt{out} variables in the vertex shader.
 
 The graphics pipline then uses the NDC and performs the perspective divide,
 which divides the $x$, $y$, and $z$ coordinates by the $w$ coordinate of the homogenous coordinates,
 resulting in a reduction of dimension from 4 to 3.
 Then, the viewport transformation, which maps the NDC to screen space,
-parameterized by the screen width and height, is performed.
+parameterized by the screen width and height in pixels, is performed.
 Rasterization and interpolation of the vertex positions alongside all other vertex attributes
 is then performed across the primitive.
 The resulting elements are called fragments.
@@ -639,9 +664,9 @@ output a color by setting the \texttt{out vec4 FragColor} variable.
 The screen position of the fragment and all variables that were passed as \texttt{out} from the
 vertex shader can also be accessed in the fragment shader, with their values interpolated across the primitive.
 This allows for smooth color transitions or texture mapping across the primitive.
-
 Before the final color is written to the framebuffer,
-a depth test is performed to determine if the fragment is visible or covered by fragments from other primitives.
+a depth test is performed to determine if the fragment is visible or covered by fragments from other primitives,
+in which case it is discarded.
 
 
 \subsubsection{Perspective Projection in OpenGL}
@@ -671,9 +696,8 @@ with coordinates ranging from -1 to 1 in all dimensions, as discussed in the pre
 The projection matrix defines a frustum, which, depending on the projection type, can be a truncated pyramid or a cube,
 that defines the volume of space visible through the camera lens.
 In the case of the perspective projection, the frustum is a truncated pyramid, as shown in figure~\ref{fig:perspective}.
-The parameters of the frustum are defined by the field of view, aspect ratio, and near and far clipping planes,
-as illustrated by figure~\ref{fig:perspective}
-\begin{figure}[h]
+The parameters of the frustum are defined by the field of view, aspect ratio, and near and far clipping planes.
+\begin{figure}[h!]
     \centering
     \includegraphics[width=0.50\textwidth]{images/perspective}
     \caption{Frustrum defined by perspective projection}
