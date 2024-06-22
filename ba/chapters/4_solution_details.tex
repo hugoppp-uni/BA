@@ -744,12 +744,12 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
 
 To constrain the planes to the area where the points are located, a bounding volume can be used.
 A bounding volume is a geometric shape that encloses a set of points or other shapes,
-and is often used to simplify collision detection or culling.
+and is often used to simplify collision detection or culling~\cite{gabriel_zachmann_geometric_2002}.
+In this case the bounding volume will be used to generate a mesh that represents the area where the points are located.
 Common bounding volumes include axis-aligned bounding boxes (AABB), spheres, or oriented bounding boxes (OBB).
-A more complex bounding volume is the convex hull, which is the smallest convex polygon that contains all the points.
-\cite{gabriel_zachmann_geometric_2002}
-A rubber band can be used to illustrate the concept: If a rubber band is stretched around a set of points,
-the convex hull is the shape the rubber band takes, as illustrated in figure~\ref{fig:convex-hull}.
+A more complex bounding volume is the convex hull, which is the smallest convex polygon that contains all the points~\cite{gabriel_zachmann_geometric_2002}.
+A rubber band can be used to illustrate the concept: If a rubber band is stretched around a set of points represented by nails in a board,
+the convex hull is the shape a rubber band takes when it is released, as illustrated in figure~\ref{fig:convex-hull}~\cite{de_berg_computational_2008}.
 As the convex hull is the most accurate commonly used bounding volume,
 it will be used for constraining the planes going forward.
 
@@ -760,16 +760,74 @@ it will be used for constraining the planes going forward.
 \end{figure}
 
 \subsubsection{Convex Hull Algorithms}
-There are multiple algorithms to calculate the convex hull of a set of points.
-In~\citeyear{graham_efficient_1972}~\cite{graham_efficient_1972} proposed an algorithm to calculate the convex hull of $n$ points in $O(n \log n)$ time.
-\cite{andrew_another_1979} later proposed a variation of the algorithm in~\citeyear{andrew_another_1979}, which will be explained here.
-More recent algorithms solve the problem in $O(n \log h)$ time, where $h$ is the number of points on the convex hull, but are more complex to implement.
+There are many algorithms available for calculating the convex hull, as it is a well-known problem in computational geometry.
+This section will mainly cover the Graham Scan.
+For a more comprehensive overview of available algorithms, see~\cite{de_berg_computational_2008} section 1.4.
+
+In~\citeyear{graham_efficient_1972}~\cite{graham_efficient_1972} proposed an algorithm to calculate
+the convex hull of $n$ points in $O(n \log n)$ time, the Graham's Scan.
+The Graham scan algorithm begins by selecting the point with the lowest y-coordinate (or the leftmost point in the case of a tie).
+Note that the original paper describes using the center of the points as the starting point,
+but common implementations use the lowest y-coordinate
+~\footfullcite{noauthor_graham_2024}\multiplefootnoteseparator\footfullcite{noauthor_convex_2013} --
+the core concepts remain the same.
+After selecting the starting points, it then sorts the remaining points in ascending order
+of their polar angles relative to the starting point.
+If two points have the same polar angle, only the farthest point is kept.
+Finally, it iteratively considers each point in the sorted order and determines whether it
+makes a clockwise or counterclockwise turn relative to the previous two points on the convex hull.
+If it makes a clockwise, the algorithm removes the previous point from the convex hull
+and repeats the process until all points have been considered.
 
 
+\begin{figure}[h!]
+    \centering
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/graham1}
+        \caption{$PAB$ are counterclockwise, $A$ is kept}
+    \end{subfigure}%
+    \hspace{0.05\textwidth} % Added space between subfigures
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/graham2}
+        \caption{$BCD$ are clockwise, $C$ is removed}
+    \end{subfigure}%
+    \hspace{0.05\textwidth} % Added space between subfigures
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/graham3}
+        \caption{$ABD$ are clockwise, $D$ is kept, resulting hull}
+    \end{subfigure}%
+    \caption{Example of the Graham Scan algorithm applied to a set of points}
+    \label{fig:graham}
+\end{figure}
 
-Andrew's Monotone Chain Algorithm as proposed by~\cite{andrew_another_1979} ...
+\cite{andrew_another_1979} later proposed a variation of the algorithm called the
+monotone chain in~\citeyear{andrew_another_1979}, which sorts the points by their
+x-coordinate and y-coordinates instead of their polar angle.
+It then constructs the upper and lower hulls separately, which are then merged to form the convex hull.
+
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.35\linewidth]{images/andrews}
+    \caption{Upper and lower hull of Andrew's monotone chain algorithm}
+\end{figure}
+
 
 %todo: Explain the algorithm
+
+More recent algorithms like Chan's algorithm~\cite{chan_optimal_1996} combine the graham scan with other techniques to solve the problem in $O(n \log h)$ time,
+where $h$ is the number of points of the convex hull.
+Thus, in case $h$ is much smaller than $n$, these algorithms are faster than the Graham's Scan.
+
+For the purpose of this thesis, the Chan's algorithm would be the most efficient choice,
+as the number of points of the convex hull is expected to be much smaller than the total number of points.
+However, as Chan's algorithm is more complex to implement and the performance of the convex hull algorithm
+is small compared to running the RANSAC algorithm, Andrew's Monotone Chain Algorithm is used here instead.
+
+
 
 \subsubsection{Rendering the plane constrained by the convex hull}
 To render a plane constrained by the convex hull,
@@ -802,9 +860,4 @@ Prior to detecting the planes, the smartphone has been moved around the scene to
     \label{fig:convex-hull}
 \end{figure}
 
-
-
-
-
-\parencite{graham_efficient_1972, andrew_another_1979}
 
