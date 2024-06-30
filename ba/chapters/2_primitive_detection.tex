@@ -1,7 +1,28 @@
 \chapter{Primitive Detection Algorithms}
-Primitive detection algorithms are
-Primitive detection is an well-established area in computer vision.
-It includes a range of algorithms with different methods and data formats.
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\linewidth]{images/primitive_detection}
+    \caption{Process of detecting primitives}
+    \label{fig:primitive_detection}
+\end{figure}
+Primitive detection is a well-established area in computer vision that aims to detect simple geometric shapes
+like planes, spheres, cylinders, or cones a given input data.
+These methods are model-fitting algorithms that identify the most likely model that fits a subset of the input data.
+The result of these algorithms is a set of parameters that describe the detected shape.
+These shapes are an abstraction of the input data, offering a simplified compact representation of the data,
+allowing for higher performance and the ability to perform higher-level tasks such as object recognition or scene reconstruction.
+The input data representation varies by algorithm, with the most common types being:
+\begin{itemize}
+    \item \textbf{Point Clouds:} A set of 3D points in space representing the sampled surface of the real-world
+    \item \textbf{Depth Images:} A 2D image where each pixel represents the distance to the camera, typically obtained from depth sensors
+    \item \textbf{Image Sequences:} A sequence of 2D images from different viewpoints that are typically first convert to a point cloud or depth image for further processing, further discussed in section~\ref{sec:technical-background-depth-from-motion}
+    \item \textbf{Meshes:} A polygonal representation of surfaces, consisting of vertices, edges, and faces, typically generated from surface reconstruction algorithms. Not further considered in this thesis. \cite{kaiser_survey_2019}
+\end{itemize}
+
+This chapter provides an overview of the most common primitive detection algorithms by categorizing them based on their underlying methodology.
+The chapter then compares the two most widely used base methodologies,
+the Hough Transform and the Random Sample Consensus (RANSAC) algorithm.
 
 
 \section{Categorization}
@@ -50,11 +71,15 @@ After all data points have voted, the parameters with the highest votes reveal t
 
 \subsection{Primitive-driven Region Growing}
 
-\section{Hough Transform vs RANSAC}
-The objective of this thesis is to develop an implementation that addresses a wide range of applications.
-Consequently, it is essential to concentrate on the more general methodologies that do not specialize in a specific context.
-The Hough Transform and the Random Sample Consensus (RANSAC) algorithm stand out as the most widely used methodologies~\parencite{schnabel_efficient_2007}.
-This section provides a comparison of these two methodologies.
+\section{Choosing an algorithm: Hough Transform vs RANSAC}
+
+\cite{kaiser_survey_2019} lists over 70 detection algorithms, many of which are specialized for specific contexts.
+However, as this thesis aims to develop an end to end implementation for detecting primitives using
+a smartphone camera and rendering the detected primitives in AR, without focusing on a specific context,
+algorithms that are widely used and applicable to a wide range of applications will be considered.
+Both the Hough Transform and the Random Sample Consensus (RANSAC) algorithm stand out as the
+most widely used methodologies in the field of primitive detection~\parencite{schnabel_efficient_2007}.
+This section provides a comparison of these two methodologies and a decision on which algorithm to use for the implementation.
 %todo
 
 In general, the performance of both algorithms varies based on the context of the application.
@@ -73,9 +98,13 @@ insufficient results for their use-case.
 “That can be explained by the use of a pure mathematical principle,
 without taking into account the particularity of the building Lidar data. […] That is why
 [they] may detect a set of points which represents several roof planes or which belongs to several planes.”
-
 They also had difficulties to determine the parameters of Hough Transform,
 as the optimal values vary based on the characteristics of the point cloud.
 Motivated by RANSACS rapidity they investigated extending the RANSAC algorithm and with their improvements
 found that it produces satisfying results.
 
+As apparent from the examples, both the Hough Transform and RANSAC are suitable algorithms for the detection of primitives.
+However, the Hough Transform is more computationally expensive, harder to tune for specific contexts and less robust to noise and outliers.
+RANSAC also has a publicly available reference implementation in C\texttt{++} by~\parencite{schnabel_efficient_2007},
+which is e.g.\ used in the open source tool CloudCompare~\parencite{daniel_girardeau-montaut_cloudcompare_nodate} and can therefore be
+easily tested on ones own pointclouds without the need to write custom code, useful for evaluation, as can later be seen in chapter~\ref{ch:evaluation}.
