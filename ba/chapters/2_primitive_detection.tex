@@ -17,9 +17,30 @@ The authors categorize the underlying methodology of the algorithms into three c
 The following sections provide an overview of the most common algorithms in each category.
 
 \subsection{RANSAC (Stochastic)}
-The Random Sample Consensus (RANSAC) algorithm is a widely used stochastic algorithm first introduced in~\citeyear{fischler_random_1981} by~\citeauthor{fischler_random_1981}~\cite{fischler_random_1981}.
+The Random Sample Consensus (RANSAC) algorithm is a widely used stochastic model parameter estimation
+algorithm first introduced in~\citeyear{fischler_random_1981}
+by~\citeauthor{fischler_random_1981}~\cite{fischler_random_1981}.
 "The basic principle of the algorithm is to try many possible randomized models that could fit
-the data and evaluate how good this model is in order to find a consensus, i.e. an agreement of most of the data samples."~\parencite{kaiser_survey_2019}
+the data and evaluate how good this model is in order to find a consensus,
+i.e.\ an agreement of most of the data samples."~\parencite{kaiser_survey_2019}
+
+For a given shape that requires $n$ points to be defined, RANSAC follows the following steps to detect the shape
+in a set of data points $P$~\parencite{fischler_random_1981}:
+\begin{enumerate}
+    \item Randomly select a subset $S1$ of $n$ data points from $P$
+    \item Fit the model $M1$ to the selected points
+    \item Determine if the subset of inliers $S1^*$ of $P$ that fit the model $M1$ within a predefined tolerance, this is called the consensus set
+    \item If size of the consensus set $|S1^*|$ is greater than a predefined threshold $t$, re-fit the model to $S1^*$, resulting in new model $M1^*$
+    \item If size of the consensus set $|S1^*|$ is smaller than a predefined threshold $t$, repeat until a model with a consensus set of size $t$ is found or a predefined number of iterations is reached
+\end{enumerate}
+
+The algorithm has 3 main parameters that need to be set:
+\begin{itemize}
+    \item \textbf{Error tolernace:} the distance between a data point and the model under which the data point is considered an inlier
+    \item \textbf{Threshold $t$:} the number of inliers required to consider a model valid
+    \item \textbf{Number of iterations:} the number of times the algorithm will try to find a model with a consensus set of size $t$
+\end{itemize}
+
 
 \subsection{Hough Transform (Parameter Space)}
 The Hough transform introduced in~\citeyear{hough_method_1962} by \citeauthor{hough_method_1962}~\parencite{hough_method_1962} creates a voting space based on parameters where similar shapes overlap.
