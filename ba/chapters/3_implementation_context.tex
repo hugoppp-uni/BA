@@ -1,30 +1,30 @@
 \chapter{Implementation Context}
 
+This chapter goes over the technical background of the implementation and the context in which it is developed.
 
-\section{Requirements and Constraints}
 
-\paragraph{Accuracy might vary based on many variables}
+%\section{Requirements and Constraints}
 
-\begin{enumerate}
-    \item Object texture
-    \item Distance
-    \item Lighting conditions
-\end{enumerate}
-
-\paragraph{Near-real-time (once every 10s or so)}
-
-\paragraph{Limited processing power (smartphone)}
+%\paragraph{Accuracy might vary based on many variables}
+%
+%\begin{enumerate}
+%    \item Object texture
+%    \item Distance
+%    \item Lighting conditions
+%\end{enumerate}
+%
+%\paragraph{Near-real-time (once every 10s or so)}
+%
+%\paragraph{Limited processing power (smartphone)}
 
 
 \section{Potential pitfalls}
 As the development device, Google Pixel 7, does not have a depth sensor,
-the Depth API will exclusively utilize depth-from-motion techniques to derive depth information from camera images.
+the Depth API will exclusively utilize depth-from-motion techniques to derive depth information from camera images, as later described in section~\ref{sec:technical-background-depth-from-motion}.
 However, it is important to note that camera-based depth-from-motion has limitations
 when it comes to detecting depth in objects with minimal texture, such as walls.
-This drawback could potentially present challenges.
-For instance, if the objective were to recognize objects like boxes or spheres that lack texture,
-the accuracy of depth information obtained from the Depth API may not be sufficient for accurate recognition. \parencite{google_llc_arcore_doc}
-
+This drawback could potentially present challenges, especially when detecting walls or furniture with minimal texture,
+where the accuracy of depth information obtained from the Depth API may not be sufficient for accurate recognition. \parencite{google_llc_arcore_doc}
 
 \section{Hard- and Softwarestack}
 
@@ -37,6 +37,8 @@ Algorithms will be implemented in C\texttt{++} in the \texttt{procedural-augment
 This project will be integrated into the application and interfaced with Kotlin through a binding layer.
 
 \subsection{Wrapping C\texttt{++} code in Java/Kotlin using SWIG}
+To automatically generate the necessary code to interface with Java/Kotlin,
+the Simplified Wrapper and Interface Generator (SWIG) is used.
 SWIG is "a program development tool that automatically generates the bindings between C/C\texttt{++}
 code and common scripting languages"~\parencite{beazley_swig_1996}.
 It takes an interface file that describes the functions and classes to be wrapped as input and generates the

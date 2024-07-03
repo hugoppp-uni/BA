@@ -20,7 +20,7 @@ For the purpose of this project, it is used to access depth information from the
 \subsection{ARCore Depth APIs}
 Google ARCore provides two APIs to access depth information -- the Depth API and the Raw Depth API\@.
 Both APIs work by estimating depth information from a sequence of monocular camera images using
-a technique called \texttt{depth-from-motion}.
+a technique called \textit{Depth from Motion}.
 When the user moves their device, the system takes a sequence of images and estimates the depth information from the differences between these images.
 The technical details of this system are further discussed in section~\ref{sec:technical-background-depth-from-motion}.
 Google claims that that one "can get accurate results from 0 to 65 meters away,
@@ -574,7 +574,7 @@ transforming the points from world space to screen space is required.
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
 All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
 
-\subsubsection{Polygon Meshes}
+\subsubsection{Polygon Meshes}\label{subsec:polygon-meshes}
 
 \begin{figure}[h]
     \centering

@@ -220,6 +220,7 @@ To detect lines using this parameterization, the same voting process as describe
 
 
 \subsection{Primitive-driven Region Growing}
+TODO
 
 
 \section{Choosing an algorithm: Hough Transform vs RANSAC}
@@ -233,8 +234,8 @@ most widely used methodologies in the field of primitive detection~\parencite{sc
 This section provides a comparison of these two methodologies and a decision on which algorithm to use for the implementation.
 
 In general, the performance of both algorithms varies based on the context of the application.
-With optimizations, both algorithms are suitable for a wide range of applications, as seen in the following example applications.
-The Hough Transform is more computationally expensive than RANSAC~\parencite{kaiser_survey_2019}.
+With optimizations, both algorithms are suitable for a wide range of applications, but
+the Hough Transform is more computationally expensive than RANSAC~\parencite{kaiser_survey_2019}.
 \cite{tarsha-kurdi_hough-transform_2007} found that its processing time is negligible in comparison to the Hough Transform.
 RANSAC is also more robust to noise and outliers~\parencite{kaiser_survey_2019}.
 It is also simpler and therefore easier to extend and adapt to different contexts~\parencite{tarsha-kurdi_hough-transform_2007, kaiser_survey_2019}.
@@ -257,3 +258,5 @@ However, the Hough Transform is more computationally expensive, harder to tune f
 RANSAC also has a publicly available reference implementation in C\texttt{++} by~\parencite{schnabel_efficient_2007},
 which is e.g.\ used in the open source tool CloudCompare~\parencite{daniel_girardeau-montaut_cloudcompare_nodate} and can therefore be
 easily tested on ones own pointclouds without the need to write custom code, useful for evaluation, as can later be seen in chapter~\ref{ch:evaluation}.
+
+Due to these reasons, the Random Sample Consensus (RANSAC) algorithm will be used for the implementation of the primitive detection in this thesis.
