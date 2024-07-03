@@ -27,26 +27,39 @@ Examples of devices include Microsoft's HoloLens and more recently the Meta Ques
 Figure~\ref{fig:quest3-example} shows a screenshot of a trailer for a game on the Quest 3 that mixes the real world with virtual objects.
 You can see virtual boxes and enemies blended into the real environment of the player.
 The player can interact with these objects with their body and hands, using controllers or hand tracking.
-Figure~\ref{fig:visonpro-example} shows a screenshot of the Apple Vision Pro bing used in a professional setting.
-You can see a person using the device to work on virtual screen while being in a video call with colleagues,
-all while being in their real environment.
+%Figure~\ref{fig:visonpro-example} shows a screenshot of the Apple Vision Pro bing used in a professional setting.
+%You can see a person using the device to work on virtual screen while being in a video call with colleagues,
+%all while being in their real environment.
 
-\begin{figure}[h!t]
+%\begin{figure}[ht!]
+%    \centering
+%    \includegraphics[width=0.8\linewidth]{images/Apple - Introducing Apple Vision Pro [TX9qSaGXFyg - 2001x1126 - 4m41s]}
+%    \caption{Screenshot of the Apple Vision Pro announcement video at Apple Worldwide Developers Conference 2023 showcasing the device for professional use-cases.}
+%    \label{fig:visonpro-example}
+%\end{figure}
+%
+Current AR applications use a variety of techniques to blend virtual objects into the real world and make them interactable.
+As an example, the ARCore Depth SDK by Google provides features like
+\begin{itemize}
+    \item Detection of flat surfaces
+    \item Placement of virtual objects on surfaces
+    \item Depth information that can be used to occlude objects behind real-world objects
+    \item Lighting estimation for realistic shading of virtual objects
+\end{itemize}
+This however, does not allow for understanding of the environment for the purpose of complex logic outside of rendering,
+such as navigation of AI agents through the environment or creating customized game logic based on the layout of the environment,
+as the API does not provide a mesh of the environment or similar features.
+To enable these kinds of applications, it is essential to have an accurate understanding of the real world surrounding the user.
+
+This thesis aims to provide an implementation of a system that can create a mesh of the environment
+from data provided by the ARCore Depth API using primitive detection algorithms and overlay this mesh onto the camera feed for visualization.
+The information about the environment (both the primitive parameterization and the resulting mesh) can then be used for various applications as mentioned above.
+\begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{images/Tripwire Interactive - Espire 2 Mixed Reality Update Trailer [50DD3XwjOIA - 2001x1126 - 0m21s]}
     \caption{Screenshot of trailer for the game Espire 2 by Tripwire Interactive showcasing a player using the Meta Quest 3 playing the game blended with their real environment.}
     \label{fig:quest3-example}
 \end{figure}
-
-\begin{figure}[h!t]
-    \centering
-    \includegraphics[width=0.8\linewidth]{images/Apple - Introducing Apple Vision Pro [TX9qSaGXFyg - 2001x1126 - 4m41s]}
-    \caption{Screenshot of the Apple Vision Pro announcement video at Apple Worldwide Developers Conference 2023 showcasing the device for professional use-cases.}
-    \label{fig:visonpro-example}
-\end{figure}
-
-To enable these kinds of applications, it is essential to have an accurate understanding of the real world surrounding the user.
-%todo there are multiple approaches
 
 
 %\section{Research Aims}
