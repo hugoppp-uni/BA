@@ -1,8 +1,141 @@
 \chapter{Evaluation}\label{ch:evaluation}
+In this chapter, the individual algorithms, as well as the final performance of the combined system, will be evaluated.
+The depth from motion algorithm will be evaluated based on different materials and their resulting confidence maps in section~\ref{sec:eval-depth-from-motion}.
+In section~\ref{sec:eval-ransac-algorithm}, the RANSAC algorithm will be evaluated based on synthetic data, as well as real world data.
+Finally, in section~\ref{sec:eval-combined}, the combined system performance will be evaluated.
 %klare begründung => Anforderung erfüllt ja oder nein
 
+\section{Depth from Motion}\label{sec:eval-depth-from-motion}
+As the depth from motion algorithm greatly differs in its performance based on the amount of texture in the captured scene~\cite{google_llc_arcore_doc},
+this section will evaluate different materials based on their resulting confidence maps, as retrieved from the ARCore Raw Depth API\@.
+In figure~\ref{fig:materials}, the confidence maps of different materials are shown - the camera image on top, the confidence map on the bottom.
 
-\section{RANSAC Algorithm}
+\begin{figure}[h!t]
+    \centering
+    % First row
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/wall-far-cam}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/wall-close-cam}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/carpet-cam}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/wood-cam}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/wall-far-conf}
+        \caption{Wall, 1.5m}
+        \label{fig:material-wall-far}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/wall-close-conf}
+        \caption{Wall, 0.5m}
+        \label{fig:material-wall-close}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/carpet-conf}
+        \caption{Carpet}
+        \label{fig:material-carpet}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/wood-conf}
+        \caption{Wooden floor}
+        \label{fig:material-wood}
+    \end{subfigure}%
+
+    \vspace{0.5em}
+
+    % First row
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/leather-cam}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/whiteFurniture-cam}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/tiles-cam}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/giftpaper-cam}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/leather-conf}
+        \caption{Leather armchair}
+        \label{fig:material-leather}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/whiteFurniture-conf}
+        \caption{White furniture}
+        \label{fig:material-whiteFurniture}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/tiles-conf}
+        \caption{Bathroom tiles}
+        \label{fig:material-tiles}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/materials/giftpaper-conf}
+        \caption{Gift paper}
+        \label{fig:material-giftpaper}
+    \end{subfigure}%
+
+    \caption{Comparison of confidence maps of different materials. Camera image on top, confidence map on bottom.}
+    \label{fig:materials}
+\end{figure}
+
+In figure~\ref{fig:material-wall-close} and~\ref{fig:material-wall-far}, the confidence maps of a wall at different distances are shown.
+It is apparent that the confidence of the wall at 1.5m distance is almost completely black, meaning low confidence.
+This is due to the lack of any texture on the wall at this distance.
+When moving closer to the wall, the structure of the wall becomes more apparent and the confidence increases greatly.
+
+In figure~\ref{fig:material-carpet}, a carpet with a lot of texture is shown, the resulting confidence map has fairly high confidence on average,
+but also has dark sports throughout the map.
+This could be a result of the repetitive pattern of the carpet.
+
+The highest confidence of all tested materials is achieved on a wooden floor, as shown in figure~\ref{fig:material-wood}.
+This can be attributed to the high amount of texture and value variance through the wood, while not being repetitive.
+The seams between the wooden planks are also clearly visible.
+
+Figure~\ref{fig:material-leather} shows a leather armchair, which has a high confidence on the seams of the chair and
+on creases of the leather, with low confidence in other areas, where the leather is smoother.
+A similar pattern is visible on white furniture and bathroom tiles, in figures~\ref{fig:material-whiteFurniture} and~\ref{fig:material-tiles} respectively,
+where the white surface has very low confidence, while the seams between the surfaces have increased confidence.
+The gift paper shown in figure~\ref{fig:material-giftpaper} shows a similar effect, but less pronounced.
+As the surface itself is striped with dots randomly placed throughout, the confidence is higher overall,
+but the striped pattern is still visible in the confidence map, as the stripes themselves contain little texture.
+
+These examples show how the amount of texture on a given surface greatly influences the confidence of the depth from motion algorithm, as expected.
+The algorithm performs best on surfaces with high texture, while struggling with low texture surfaces.
+Small repetitive patterns can also lead to low confidence, as visible in the carpet example.
+It is also important to note that the texture captured by the camera itself is important, not the texture of the material itself.
+This can be seen in the first example of the wall: When capturing from afar, the cameras resolution is too low to capture the texture,
+but when moving closer to the wall, the texture of the wall becomes more apparent and the confidence increases.
+Lighting conditions will also influence the confidence of the algorithm,
+as angled light will create shadows that will increase the texture of the surface~\cite{google_llc_arcore_doc} (not shown in the comparison).
+
+
+\section{RANSAC Algorithm}\label{sec:eval-ransac-algorithm}
 
 \subsection{Tests on singular synthetic cube}
 
