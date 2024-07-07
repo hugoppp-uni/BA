@@ -3,12 +3,12 @@
 \begin{figure}[ht!]
     \centering
     \includegraphics[width=\linewidth]{images/primitive_detection}
-    \caption{Process of detecting primitives}
+    \caption{Process of detecting primitives \cite{kaiser_survey_2019}}
     \label{fig:primitive_detection}
 \end{figure}
 Primitive detection is a well-established area in computer vision that aims to detect simple geometric shapes
-like planes, spheres, cylinders, or cones a given input data.
-These methods are model-fitting algorithms that identify the most likely model that fits a subset of the input data.
+like planes, spheres or cylinders in given input data.
+These methods are model-fitting algorithms that identify the most likely model that fits (a subset of) the input data.
 The result of these algorithms is a set of parameters that describe the detected shape.
 These shapes are an abstraction of the input data, offering a simplified compact representation of the data,
 allowing for higher performance and the ability to perform higher-level tasks such as object recognition or scene reconstruction.
@@ -52,7 +52,7 @@ in a set of data points $P$~\parencite{fischler_random_1981}:
 \begin{enumerate}
     \item Randomly select a subset $S1$ of $n$ data points from $P$
     \item Fit the model $M1$ to the selected points
-    \item Determine if the subset of inliers $S1^*$ of $P$ that fit the model $M1$ within a predefined tolerance, this is called the consensus set
+    \item Determine the subset of inliers $S1^*$ of $P$ that fit the model $M1$ within a predefined tolerance, this is called the consensus set
     \item If size of the consensus set $|S1^*|$ is greater than a predefined threshold $t$, re-fit the model to $S1^*$, resulting in new model $M1^*$
     \item If size of the consensus set $|S1^*|$ is smaller than a predefined threshold $t$, repeat until a model with a consensus set of size $t$ is found or a predefined number of iterations is reached
 \end{enumerate}
@@ -136,7 +136,7 @@ When all points are plotted in parameter space, local maxima represent possible 
 
         \caption{Parameter Space}
     \end{subfigure}%
-    \caption{Concept of Hough Transform illlustrated for the usage of detecting lines}
+    \caption{Concept of Hough Transform illlustrated for the usage of detecting lines. Based on \cite{shree_k_nayar_first_2021}.}
     \label{fig:hough-transform}
 \end{figure}
 
@@ -210,7 +210,7 @@ To solve this problem, a parameterization using the angle from the x-axis $\thet
         \caption{Parameter Space}
         \label{fig:ht-polar-2}
     \end{subfigure}%
-    \caption{Hough Transform using polar coordinates}
+    \caption{Hough Transform using polar coordinates. Based on \cite{shree_k_nayar_first_2021}.}
     \label{fig:hough-transform-polar}
 \end{figure}
 This parameterization allows for the representation of all lines, including ones that are vertical,

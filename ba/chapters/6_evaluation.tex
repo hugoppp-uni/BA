@@ -136,8 +136,11 @@ as angled light will create shadows that will increase the texture of the surfac
 
 
 \section{RANSAC Algorithm}\label{sec:eval-ransac-algorithm}
+In this section, the RANSAC algorithm will be evaluated based on a model of a cube,
+first using synthetic data in section~\ref{subsec:tests-on-singular-synthetic-cube} and then using real world data
+in section~\ref{subsec:tests-on-real-world-data}.
 
-\subsection{Tests on singular synthetic cube}
+\subsection{Tests on singular synthetic cube}\label{subsec:tests-on-singular-synthetic-cube}
 
 A unit cube will be used as a test object to evaluate the RANSAC algorithm.
 The cube has been generated with a side length of 1 and a sampling rate of 0.01.
@@ -156,7 +159,7 @@ This leads to 6 faces being recognized correctly, but some points not being assi
 as the with each primitive extraction pass, points are extracted that lie within 0.2 of the recognized plane.
 
 
-\begin{figure}[p]
+\begin{figure}[h!tp]
     \centering
     % First row
     \begin{subfigure}[b]{0.25\textwidth}
@@ -245,7 +248,7 @@ for the remaining points.
 To achieve results with these conditions, the epsilon parameter had to be increased to 0.015 to achieve any results at all.
 Using a noise level of 0.02 with missing data yields no satisfactory results, even with tweaking the parameters.
 
-\begin{figure}[p]
+\begin{figure}[h!tp]
     \centering
     % First row
     \begin{subfigure}[b]{0.25\textwidth}
@@ -330,4 +333,4 @@ Using a noise level of 0.02 with missing data yields no satisfactory results, ev
     \label{fig:test-both}
 \end{figure}
 
-\subsection{Tests on real world data}
+\subsection{Tests on real world data}\label{subsec:tests-on-real-world-data}

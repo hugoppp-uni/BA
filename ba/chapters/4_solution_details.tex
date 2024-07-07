@@ -10,6 +10,11 @@ The RANSAC algorithm is then applied to the point cloud to detect geometric prim
 Finally, rendering the primitives is discussed in section~\ref{sec:rendering-the-primitives}.
 %todo
 
+%\subsection{Overview of the application application}
+%This section will provide an overview of the structure of the application.
+%
+%The application can be divided into three main components:
+
 
 \section{Capturing Depth Images}\label{sec:capturing-depth-images}
 The first step is acquiring the depth data required for primitive detection.
@@ -64,7 +69,7 @@ No confidence image is provided.
         \caption{Raw Depth API confidence image}
     \end{subfigure}%
 
-    \caption{Full Depth vs. Raw Depth}
+    \caption{Full Depth vs. Raw Depth. Source: \cite{google_llc_arcore_doc}}
     \label{fig:depth-api-images}
 \end{figure}
 APIs have their use cases --
@@ -81,7 +86,7 @@ This sections provides a brief overview of the workings of the Depth from Motion
 \begin{figure}[ht!]
     \centering
     \includegraphics[width=\linewidth]{images/DepthFromMotion}
-    \caption{Overview of the Depth from Motion System}
+    \caption{Overview of the Depth from Motion System. Source: \cite{valentin_depth_2018}}
 \end{figure}
 When users move their smartphones, the system uses ARCore's visual-inertial odometry (VIO)
 to determine its position and orientation in six dimensions (6DoF): up/down, left/right, forward/backward, and tilt/swivel/rotate.
@@ -116,7 +121,7 @@ assessable through the Full Depth API\@.
         \includegraphics[width=\linewidth]{images/DepthFromMotionBilateral2}
         \caption{Interpolated}
     \end{subfigure}%
-    \caption{Interpolation with Bilateral Solver}
+    \caption{Interpolation with Bilateral Solver. Source: \cite{valentin_depth_2018}}
     \label{fig:depth-from-motion-interpolation}
 \end{figure}
 
@@ -298,7 +303,7 @@ that transforms points from local space to screen space. \cite{de_vries_learn_20
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.85\linewidth]{images/coordinateSystemsAdjusted}
-    \caption{Coordinate systems}
+    \caption{Coordinate systems. Adjusted from \cite{de_vries_learn_2020}.}
     \label{fig:coordinate-systems}
 \end{figure}
 
@@ -309,7 +314,7 @@ To illustrate this, consider a simpel pinhole camera model, as shown in figure~\
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.45\linewidth]{images/pinhole}
-    \caption{Pinhole camera model}
+    \caption{Pinhole camera model. Source: \href{https://commons.wikimedia.org/wiki/File:Pinhole-camera.svg}{Wikimedia Commons}}
     \label{fig:pinhole-camera-model}
 \end{figure}
 The camera is represented as a box with a small hole on one side.
@@ -337,8 +342,7 @@ The two most important parameters are the focal length $f$ and the image center 
     \centering
     \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
         \includegraphics[width=1\linewidth]{images/intrinsics}
-        %    source: szeliski_computer_nodate
-        \caption{Geometry of a camera with an image plane height $H$, width $W$, focal length $f$, and principal point $c$.}
+        \caption{Geometry of a camera with an image plane height $H$, width $W$, focal length $f$, and principal point $c$. Source: \cite{szeliski_computer_nodate}}
         \label{fig:intrinsics-3d}
     \end{subfigure}%
     \hspace{0.05\textwidth} % Added space between subfigures
@@ -346,7 +350,7 @@ The two most important parameters are the focal length $f$ and the image center 
         \resizebox{\linewidth}{!}{
             \input{images/intrinsics2d}
         }
-        \caption{Projection of an observed point $A$ onto the image plane in the $y$-direction.}
+        \caption{Projection of an observed point $A$ onto the image plane in the $y$-direction. Based on \cite{kris_kitani_computer_2017}}
         \label{fig:intrinsics-2d}
     \end{subfigure}%
     \caption{Camera intrinsics}
@@ -469,7 +473,7 @@ insertion and traversal in logarithmic time.
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.65\textwidth]{images/octree}
-    \caption{Octree}
+    \caption{Octree. Source: \href{https://commons.wikimedia.org/wiki/File:Octree2.svg}{Wikimedia Commons}}
     \label{fig:octrree}
 \end{figure}
 
@@ -503,7 +507,7 @@ The RANSAC algorithm will then detect multiple planes instead of one.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.35\linewidth]{images/aliasing}
-    \caption{Example of aliasing, distance between the line and cell centers varies across cells}
+    \caption{TODO better image, Example of aliasing, distance between the line and cell centers varies across cells}
     \label{fig:aliasing}
 \end{figure}
 
@@ -643,7 +647,7 @@ All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeau
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.70\textwidth]{images/Mesh_overview}
-    \caption{Mesh overview}
+    \caption{Mesh overview. Source:~\cite{dorner_virtual_2019}}
     \label{fig:mesh-overview}
 \end{figure}
 
@@ -696,7 +700,7 @@ See figure~\ref{fig:graphics-pipeline} for an overview of the graphics pipeline.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.70\textwidth]{images/graphics-pipeline}
-    \caption{Graphics Pipeline. Blue boxes represent programmable stages. The Geometry Shader is optional and not covered in this thesis.}
+    \caption{Graphics Pipeline. Blue boxes represent programmable stages. The Geometry Shader is optional and not covered in this thesis. Source:~\cite{de_vries_learn_2020}}
     \label{fig:graphics-pipeline}
 \end{figure}
 
@@ -745,7 +749,7 @@ Instead, an intermediate coordinate system known as clip space is introduced, as
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.85\linewidth]{images/coordinate_systems}
-    \caption{Extension of coordinate systems by clip space}
+    \caption{Extension of coordinate systems by clip space. Source: \cite{de_vries_learn_2020}}
     \label{fig:coordinate-systems-with-clip-space}
 \end{figure}
 Coordinates in clip space are in normalized device coordinates (NDC), which is a cube
@@ -766,7 +770,7 @@ The parameters of the frustum are defined by the field of view, aspect ratio, an
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.50\textwidth]{images/perspective}
-    \caption{Frustrum defined by perspective projection}
+    \caption{Frustrum defined by perspective projection. Source: \cite{de_vries_learn_2020}}
     \label{fig:perspective}
 \end{figure}
 Multiplication of the vertex position with the projection matrix transforms the vertex into clip space.
@@ -805,7 +809,7 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
 \begin{figure}[ht!]
     \centering
     \includegraphics[width=0.9\linewidth]{images/bounding-volumes}
-    \caption{Most commonly used bounding volumes}
+    \caption{Most commonly used bounding volumes. Source: \cite{gabriel_zachmann_geometric_2002}}
 \end{figure}
 
 To constrain the planes to the area where the points are located, a bounding volume can be used.
@@ -822,7 +826,7 @@ it will be used for constraining the planes going forward.
 \begin{figure}[ht!]
     \centering
     \includegraphics[width=0.25\linewidth]{images/ConvexHull}
-    \caption{Rubber band analogy for the Convex Hull}
+    \caption{Rubber band analogy for the Convex Hull. Source: \href{https://commons.wikimedia.org/wiki/File:ConvexHull.svg}{Wikimedia Commons}}
 \end{figure}
 
 \subsubsection{Convex Hull Algorithms}
@@ -865,7 +869,7 @@ and repeats the process until all points have been considered.
         \includegraphics[width=0.9\linewidth]{images/graham3}
         \caption{$ABD$ are clockwise, $D$ is kept, resulting hull}
     \end{subfigure}%
-    \caption{Example of the Graham Scan algorithm applied to a set of points}
+    \caption{Example of the Graham Scan algorithm applied to a set of points. Source: \href{https://commons.wikimedia.org/wiki/File:Graham_Scan.svg}{Wikimedia Commons}}
     \label{fig:graham}
 \end{figure}
 
@@ -878,7 +882,7 @@ It then constructs the upper and lower hulls separately, which are then merged t
 \begin{figure}[ht!]
     \centering
     \includegraphics[width=0.35\linewidth]{images/andrews}
-    \caption{Upper and lower hull of Andrew's monotone chain algorithm}
+    \caption{Upper and lower hull of Andrew's monotone chain algorithm. Source:~\cite{de_berg_computational_2008}}
 \end{figure}
 
 
