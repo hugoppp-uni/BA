@@ -134,6 +134,48 @@ but when moving closer to the wall, the texture of the wall becomes more apparen
 Lighting conditions will also influence the confidence of the algorithm,
 as angled light will create shadows that will increase the texture of the surface~\cite{google_llc_arcore_doc} (not shown in the comparison).
 
+\section{Point cloud datastructures}\label{sec:point-cloud-datastructures}
+This section will evaluate the two point cloud datastructures as described in section~\ref{subsec:inserting-new-points-into-the-point-cloud}.
+To evaluate the datastructures, the point cloud is transferred from the mobile application to a computer using
+a simple HTTP server with a single endpoint, that accepts a file using a POST request and saves it to disk.
+The android application will then stream the point cloud data, serialized as a PLY file, to the server on a push of a button.
+A PLY file is a simple file format for storing 3D point cloud data in plain text
+and allows for saving custom properties for each vertex, such as the confidence value of the point.
+
+\begin{lstlisting}[caption=Example PLY file]
+ply
+format ascii 1.0
+element vertex 6
+property float x
+property float y
+property float z
+property float confidence
+property uchar red
+property uchar green
+property uchar blue
+end_header
+0.1851168 -0.77074146 -0.92582846 1.0 0 255 0
+-0.061887983 -0.7755803 -0.79551744 1.0 0 255 0
+-0.058628604 -0.7638883 -0.7860476 0.80784315 245 10 0
+-0.07720285 -0.75610626 -0.80394375 0.81960785 230 25 0
+-0.19774273 -0.6645372 -2.5003948 1.0 0 255 0
+-0.09499544 -0.028413996 -2.553247 0.99607843 5 250 0
+\end{lstlisting}
+
+%\begin{lstlisting}[caption=HTTP server code, language=Python]
+%from fastapi import FastAPI
+%from starlette.requests import Request
+%
+%app = FastAPI()
+%
+%@app.post("/upload")
+%async def upload(request: Request):
+%    body = await request.body()
+%    body_str = body.decode('utf-8')
+%    with open("data.ply", "w") as f:
+%        f.write(body_str)
+%\end{lstlisting}
+
 
 \section{RANSAC Algorithm}\label{sec:eval-ransac-algorithm}
 In this section, the RANSAC algorithm will be evaluated based on a model of a cube,
@@ -334,3 +376,4 @@ Using a noise level of 0.02 with missing data yields no satisfactory results, ev
 \end{figure}
 
 \subsection{Tests on real world data}\label{subsec:tests-on-real-world-data}
+
