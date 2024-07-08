@@ -1,12 +1,36 @@
 \chapter{Conclusion and Outlook}
 
 \section{Future Work}
-\begin{enumerate}
-    \item Exploring different datastructures other than octrees for storing and updating the point cloud data
-    \item Detection of more complex primitives, such as cylinders and spheres
-    \item Detection and classification of objects within the scene
-    \item Session Management: Implement functionality to save the extracted data, enabling users to pause and later resume the session, ensuring object identifiers are maintained across sessions
-    \item Object Persistence: Extend the system to recognize and track objects even when they are moved between sessions
-\end{enumerate}
 
+The system developed in this thesis provides a foundation for further research and development in
+the field of processing depth data from ARCore or similar APIs that provide a sequence of depth images, to create a mesh of a scene.
+However, the biggest current limitation of the system is the quality of the depth data, as the depth-from-motion technique
+used by ARCore has limitations when it comes to detecting depth in objects with minimal texture.
+
+An interesting aspect for further research is thus exploring the data quality of different devices,
+with and without depth sensors, and how it affects the performance of the primitive detection algorithm.
+Using the Full Depth API instead of the Raw Depth API and testing if the interpolated depth data improves the results
+is also a valid point of further research.
+
+As far as extending the system, implementing the detection of more complex primitives,
+such as cylinders and spheres, would be a logical next step.
+The part of detecting the actual primitives also provides a good starting point for further research,
+as there exist many different algorithms, specialized for different types of contexts and applications, as discussed in chapter~\ref{ch:primitive-detection-algorithms}.
+As the system provides the foundation for building the point cloud and rendering the primitives,
+it is possible to exchange the primitive detection algorithm with a different one, without changing other parts of the system
+and evaluate the performance of different algorithms for the specific use case.
+
+Solving the problem of data quality also opens up many new research possibilities,
+such as classifying and / or labeling the objects in the scene or implementing a system
+that allows for objects to be moved during a session.
+
+%
+%\begin{enumerate}
+%    \item Exploring different datastructures other than octrees for storing and updating the point cloud data
+%    \item Detection of more complex primitives, such as cylinders and spheres
+%    \item Detection and classification of objects within the scene
+%    \item Session Management: Implement functionality to save the extracted data, enabling users to pause and later resume the session, ensuring object identifiers are maintained across sessions
+%    \item Object Persistence: Extend the system to recognize and track objects even when they are moved between sessions
+%\end{enumerate}
+%
 

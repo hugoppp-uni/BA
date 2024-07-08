@@ -1,6 +1,8 @@
-\chapter{Implementation Details}
+\chapter{Solution}
 
-This chapter goes into detail about the implementation of the solution of the whole detection pipeline.
+This chapter goes into detail about the solution of the whole detection pipeline.
+All concepts and algorithms that are used will be explained in detail as needed.
+
 First, depth information is collected using the ARCore Raw Depth API via depth images and confidence images, as explained in section~\ref{sec:capturing-depth-images}.
 %Low confidence points under a certain threshold are filtered out.
 %Each pixel of the depth image is then projected into three-dimensional world-space, utilizing the camera's intrinsics.
@@ -8,6 +10,8 @@ First, depth information is collected using the ARCore Raw Depth API via depth i
 Then, in section~\ref{sec:building-the-point-cloud}, the depth images are converted into a point cloud.
 The RANSAC algorithm is then applied to the point cloud to detect geometric primitives in section~\ref{sec:detecting-primitives-using-ransac}.
 Finally, rendering the primitives is discussed in section~\ref{sec:rendering-the-primitives}.
+For the scope of this thesis, only the detection of planes is implemented, however,
+it is possible to extend the pipeline to detect all other primitives detected by the RANSAC implementation by~\cite{schnabel_efficient_2007}.
 %todo
 
 %\subsection{Overview of the application application}
@@ -77,7 +81,7 @@ the Depth API is preferred in cases where it is crucial to have a depth value fo
 while the Raw depth API is preferred if accuracy of the depth information is crucial.
 As accuracy is crucial for primitive detection and depth information for every pixel is not required, the Raw Depth API is used in this project.
 
-\subsection{Technical Background: Depth from Motion}\label{sec:technical-background-depth-from-motion}
+\subsection{Technical Background: Depth From Motion}\label{sec:technical-background-depth-from-motion}
 Depth from motion is a technique developed by Google that estimates depth information from a sequence of monocular camera images
 and is used by the ARCore Depth API to provide depth information.
 Its primary purpose is to enable AR applications that rely on depth information on devices lacking a dedicated depth sensor or numerous cameras.
@@ -129,7 +133,7 @@ From the paper it is unclear, which part of the pipeline are omitted in the Raw 
 but it is reasonable to assume that the Raw Depth API accesses the sparse depth map and confidence values before the interpolation step.
 
 
-\section{Building the point cloud}\label{sec:building-the-point-cloud}
+\section{Building the Point Cloud}\label{sec:building-the-point-cloud}
 With the depth image and confidence image collected from the Raw Depth API,
 the next step is to convert the depth image into a point cloud, as RANSAC is a point-based algorithm.
 The process consists of three steps:
@@ -139,14 +143,14 @@ The process consists of three steps:
     \item Inserting new points into the point cloud
 \end{enumerate}
 
-\subsection{Filtering low confidence points}
+\subsection{Filtering Low Confidence Points}
 The Raw Depth API provides a confidence image that indicates the reliability of the depth information for each pixel.
 To improve the accuracy of the point cloud, points with low confidence are filtered out.
 A threshold value is set, below which points are discarded.
 Filtering out low confidence points early in the pipeline will also improve performance,
 as fewer points need to be processed in the following steps.
 
-\subsection{Transforming depth image pixels to world coordinate points}
+\subsection{Transforming Depth Image Pixels to World Coordinate Points}
 The Depth API provides depth images where each pixel holds the distance
 from the camera in millimeters.
 Before inserting points into the point cloud, the pixel values of the depth image
@@ -449,7 +453,7 @@ By multiplying the model matrix $T_{wl}$ with $p_l$, the point is transformed in
     p_w = T_{wl} \cdot p_l
 \end{equation}
 
-\subsection{Inserting new points into the point cloud}
+\subsection{Inserting New Points into the Point Cloud}\label{subsec:inserting-new-points-into-the-point-cloud}
 
 With all pixels from the depth image transformed to world coordinates, the final step involves adding these points to the point cloud.
 However, simply storing a list of all points and appending new data to it is not feasible.
@@ -515,7 +519,7 @@ Quantization might also lead to worse detection results for surface that do not 
 For example, a plane that is tilted by a couple of degrees will lead to aliasing,
 meaning that the distance between the points and the fitted plane will vary across the plane, as demonstrated in figure~\ref{fig:aliasing}.
 
-\subsubsection{Octree with neighborhood condition}
+\subsubsection{Octree with Neighborhood Condition}
 %todo
 To utilize an octree for point cloud storage, the point coordinates and its data is saved in the leaf nodes of the octree.
 In this case, each node of the octree saves the coordinate of the point and its confidence value.
@@ -574,7 +578,7 @@ and its code is publicly available in C\texttt{++}, it will be used for this the
 \subsection{Schnabel's Efficient RANSAC Algorithm}
 TODO
 
-\subsection{Wrapping C\texttt{++} code in Java/Kotlin using SWIG}
+\subsection{Wrapping C\texttt{++} Code in Java/Kotlin Using SWIG}
 To automatically generate the necessary code to interface with Java/Kotlin,
 the Simplified Wrapper and Interface Generator (SWIG) is used.
 SWIG is "a program development tool that automatically generates the bindings between C/C\texttt{++}
@@ -612,7 +616,7 @@ In the case of generating interfaces in Java, multiple files will be generated b
 
 
 
-\subsection{Porting the Efficient RANSAC Algorithm Library to the ARM architecture}
+\subsection{Porting the Efficient RANSAC Algorithm Library to the ARM Architecture}
 %The code for~\citetitle{schnabel_efficient_2007} by \citeauthor{schnabel_efficient_2007} is implemented in C\texttt{++}
 %and designed to be compiled for the x86 architecture.
 %To use it on an Android device, the library needs to be compiled for the ARM architecture.
@@ -633,12 +637,15 @@ functions of the C++ standard library with their modern counterparts.
 
 
 
-\section{Rendering the primitives}\label{sec:rendering-the-primitives}
-The primitives are stored in world space, as in relative to the worlds' origin.
-To render the primitives and overlay them onto the camera feed,
-transforming the points from world space to screen space is required.
+\section{Rendering the Primitives}\label{sec:rendering-the-primitives}
+With the primitives detected using the RANSAC algorithm, the next step is to render them.
+This section first provides an overview of the OpenGL rendering pipeline in section~\ref{subsec:opengl-rendering-pipeline}
+and the necessary steps to render the planes in section~\ref{subsec:rendering-planes}.
+As planes are infinite in size, section~\ref{subsec:constraining-planes-to-the-area-where-the-points-are-located}
+finally explains how to create a mesh that constrains the planes to the area where the points are located,
+using the convex hull algorithm.
 
-\subsection{OpenGL Rendering Pipeline}
+\subsection{OpenGL Rendering Pipeline}\label{subsec:opengl-rendering-pipeline}
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
 All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
 
@@ -782,14 +789,14 @@ Points closer to the viewer have a smaller $w$ and are less affected by the divi
 while points further away have a larger $w$ and are reduced in size more significantly.
 
 
-\subsection{Rendering planes}
+\subsection{Rendering Planes}\label{subsec:rendering-planes}
 The RANSAC algorithm provides the parameterization of any detected plane using a normal vector $n$ and the point $p$ relative the worlds origin.
 Using OpenGL, a plane can be rendered by creating two triangles composed of 3 vertices each, with two corner vertices shared between the triangles.
 To render a plane from the parameterization, one can first find two arbitrary vectors $u$ and $v$
 that are perpendicular to each-other and to the normal vector $n$.
 Using $u$ and $v$, the four corner vertices of the plane can then be calculated by adding and subtracting $u * size / 2$ and $v * size / 2$ from the point $p$.
 
-\paragraph{Calculating an arbitrary perpendicular vector}
+\paragraph{Calculating an Arbitrary Perpendicular Vector}
 The cross product of two vectors $a$ and $b$ is a vector that is perpendicular to both $a$ and $b$,
 as long as $a$ and $b$ are not parallel.
 To calculate an arbitrary perpendicular vector to a given vector $n$, one can use any of the 3 basis vectors ${b_1}$, ${b_2}$, and ${b_3}$.
@@ -804,7 +811,7 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
     \caption{Rendered RANSAC plane with size of 2*2m}
 \end{figure}
 
-\subsection{Constraining planes to the area where the points are located}
+\subsection{Constraining Planes to the Area Where the Points Are Located}\label{subsec:constraining-planes-to-the-area-where-the-points-are-located}
 
 \begin{figure}[ht!]
     \centering
@@ -899,7 +906,7 @@ is small compared to running the RANSAC algorithm, Andrew's Monotone Chain Algor
 
 
 
-\subsubsection{Rendering the plane constrained by the convex hull}
+\subsubsection{Rendering Planes Constrained by the Convex Hull}
 To render a plane constrained by the convex hull,
 a triangle mesh can be created with triangles consisting of two subsequent triangles of the hull vertices and the centroid of the hull as the third vertex each.
 Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm implemented into the application.
@@ -931,3 +938,14 @@ Prior to detecting the planes, the smartphone has been moved around the scene to
 \end{figure}
 
 
+
+\section{User Interface of the Mobile Application}
+The application has a simple user interface, consisting of 3 buttons and one label that displays the current status,
+visible in figure~\ref{fig:convex-hull}.
+Capturing depth data will automatically start once tracking is initialized.
+The point cloud is then continuously updated with new depth data on each frame.
+The amount of captured points is displayed in the label.
+The user can then press the "Detect Planes" button to run the RANSAC algorithm on the point cloud.
+Once detection is complete, the detected planes are rendered on the screen.
+Another button allows the user reset the detection results and start over.
+The button on the right side of the screen allows the user to upload the constructed point cloud to a server, as will be discussed in section~\ref{sec:point-cloud-datastructures}.
