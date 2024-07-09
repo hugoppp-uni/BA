@@ -134,13 +134,15 @@ but when moving closer to the wall, the texture of the wall becomes more apparen
 Lighting conditions will also influence the confidence of the algorithm,
 as angled light will create shadows that will increase the texture of the surface~\cite{google_llc_arcore_doc} (not shown in the comparison).
 
-\section{Point cloud datastructures}\label{sec:point-cloud-datastructures}
+\section{Point clouds}\label{sec:point-clouds}
 This section will evaluate the two point cloud datastructures as described in section~\ref{subsec:inserting-new-points-into-the-point-cloud}.
 To evaluate the datastructures, the point cloud is transferred from the mobile application to a computer using
 a simple HTTP server with a single endpoint, that accepts a file using a POST request and saves it to disk.
 The android application will then stream the point cloud data, serialized as a PLY file, to the server on a push of a button.
 A PLY file is a simple file format for storing 3D point cloud data in plain text
 and allows for saving custom properties for each vertex, such as the confidence value of the point.
+In all the following images of the point clouds, the confidence value is color-coded,
+with green being high confidence and red being low confidence.
 
 \begin{lstlisting}[caption=Example PLY file]
 ply
@@ -176,6 +178,115 @@ end_header
 %        f.write(body_str)
 %\end{lstlisting}
 
+\begin{figure}[h!tp]
+    \centering
+    \begin{subfigure}[b]{0.33\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/test-setup}
+        \caption{Color image of setup}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.33\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/test-setup-cloud}
+        \caption{Captured point cloud}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.33\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/test-setup-segmented}
+        \caption{Segmented point cloud}
+    \end{subfigure}%
+    \caption{Test setup for capturing point clouds}
+    \label{fig:test-setup}
+\end{figure}
+
+For test data, a cube wrapped with the same gift-paper as in figure~\ref{fig:material-giftpaper} is used.
+The bottom of the cube is hollow, so in total, 5 faces are visible.
+The cube is propped up on stand, to allow for easy segmentation of the point cloud later on,
+in order to remove the floor and other objects from the point cloud.
+Reproducibility is ensured by using controlled lighting conditions and a fixed setup.
+To capture a scan of the cube, the camera is moved around the cube 3 times, while also moving the camera up and down,
+to capture multiple angles for the depth from motion algorithm to work to its full potential.
+The full setup is shown in figure~\ref{fig:test-setup}.
+
+\subsection{Quantization Octree vs. Epsilon Octree}\label{subsec:quantization-octree-vs.-epsilon-octree}
+
+A point cloud with a resolution $s$ of 0.005m or 5mm is captured for both the quantization octree and the epsilon octree.
+The resulting segmented point cloud, the quantization octree has a total of about 90.000 points,
+while the epsilon octree only has about 20.000 points.
+This can be explained due to the quantization octree always ending up with the maximal resolution
+with enough data added, as it is functionally a grid.
+The epsilon octree, on the other hand, will only add points that are within the epsilon threshold of the current point,
+which means that gaps between points are at least epsilon wide, but can be wider.
+For example, if two points are exactly 2 epsilon apart, no points will be added between them.
+As epsilon is set to $s$, the epsilon octree will have fewer points than the quantization octree with the same resolution.
+To compare the two datastructures, the quantization octree will be used with a lower resolution of $s=0.010$m,
+which results in a number of points of about 22.000, which is comparable to the epsilon octree.
+
+Figure~\ref{fig:octrees-compairison} shows the raw and segmented point clouds of both datastructures.
+From inspecting the raw point cloud visually, it is apparent that the quantization octree has a higher amount of noise,
+While the cube is easily recognizable in the epsilon octree point cloud, the quantization octree point cloud has a lot of noise around the cube.
+The quantization octree also has more low-confidence points than the epsilon octree.
+This is due to the quantization octree always adding points to the cloud that fall within the threshold,
+while the epsilon octree only adds / updates points based on a condition that takes the confidence of the point into account.
+As such, the epsilon octree improves the accuracy of the point cloud when new, higher confidence points are added.
+
+
+\begin{figure}[h!tp]
+    \centering
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/eval-clouds-quant2}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/eval-clouds-epsilon}
+    \end{subfigure}%
+
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/eval-clouds-quant-segmented2}
+        \caption{Quantization Octree, $s=0.01$m}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/eval-clouds-epsilon-segmented}
+        \caption{Epsilon Octree, $s=0.005$m}
+    \end{subfigure}%
+
+    \caption{Comparison of Quantization Octree and Epsilon Octree. Raw point cloud on top, segmented on bottom.}
+    \label{fig:octrees-compairison}
+\end{figure}
+
+To calculate statistics on the point clouds, the real box is measured and a primitive box with matching dimensions is created in CloudCompare.
+Using the \textit{fine registration (ICP)} feature, it is possible to align the point clouds to the primitive box.
+This allows calculating the cloud/mesh distance between the points of the point cloud and the primitive box.
+The result of this calculation can be seen in figure~\ref{fig:octrees-compairison-stats}.
+From the histogram, it is apparent, that the quantization octree has higher noise than the epsilon octree.
+This can also bee seen in the standard deviation, which is 0.022 for the quantization octree and 0.011
+for the epsilon octree.
+This confirms the first suspicion from visual inspection of the point clouds.
+The mean distance is also higher for the quantization octree, with 0.0046 compared to 0.0011 for the epsilon octree.
+This can be understood as points being 0.5cm and 0.1cm away from the real surface in mean, respectively.
+If these points were to be used for primitive detection, this would indicate how far off the detected primitives would be from the real surface.
+
+These results suggest that the epsilon octree is an improvement over the quantization octree in terms of accuracy,
+both when it comes to the amount of noise and the distance to the real surface.
+
+\begin{figure}[h!tp]
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/eval-quant-hist}
+        \caption{Quantization Octree}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{images/eval-epsilon-hist}
+        \caption{Epsilon Octree}
+    \end{subfigure}%
+    \caption{Histogramm of distances between point cloud points and primitive mesh}
+    \label{fig:octrees-compairison-stats}
+\end{figure}
 
 \section{RANSAC Algorithm}\label{sec:eval-ransac-algorithm}
 In this section, the RANSAC algorithm will be evaluated based on a model of a cube,
@@ -187,7 +298,7 @@ in section~\ref{subsec:tests-on-real-world-data}.
 A unit cube will be used as a test object to evaluate the RANSAC algorithm.
 The cube has been generated with a side length of 1 and a sampling rate of 0.01.
 This would equate to a cube with a side length of 1m and a distance of 1cm between points in the real world,
-which is comparable to what is provided by the Raw Depth API\@.
+which is comparable to what was used in section~\ref{subsec:quantization-octree-vs.-epsilon-octree}.
 
 \subsubsection{Resilience to Noise}
 In figure~\ref{fig:test-noise}, the unit cube is shown with varying noise levels using gaussian noise.
