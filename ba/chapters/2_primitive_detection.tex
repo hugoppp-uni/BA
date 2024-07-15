@@ -34,12 +34,12 @@ The authors categorize the underlying methodology of the algorithms into three c
 \begin{itemize}
     \item \textbf{Stochastic:} algorithms that use random sampling to detect primitives, such as RANSAC
     \item \textbf{Parameter Space:} algorithms that use a parameter space to detect primitives, such as the Hough Transform
-    \item \textbf{Other techniques}, for example primitive-driven region growing
+    \item \textbf{Clustering:}, for example primitive-driven region growing
 \end{itemize}
 
 The following sections provide an overview of the most common algorithms in each category.
 
-\subsection{RANSAC (Stochastic)}
+\subsection{Stochastic (RANSAC)}
 The Random Sample Consensus (RANSAC) algorithm is a widely used stochastic model parameter estimation
 algorithm first introduced in~\citeyear{fischler_random_1981}
 by~\citeauthor{fischler_random_1981}~\cite{fischler_random_1981}.
@@ -64,7 +64,7 @@ The algorithm has 3 main parameters that need to be set:
     \item \textbf{Number of iterations:} the number of times the algorithm will try to find a model with a consensus set of size $t$
 \end{itemize}
 
-\subsection{Hough Transform (Parameter Space)}
+\subsection{Parameter Space (Hough Transform)}
 The Hough transform (HT) introduced in~\citeyear{hough_method_1962}~\parencite{hough_method_1962}
 is an algorithm that was originally designed to detect lines in images,
 but has since been generalized to detect more complex shapes like circles~\cite{ballard_generalizing_1981} and 3D shapes~\cite{woodford_demisting_2014}.
@@ -219,11 +219,30 @@ This also decreases the size of the accumulator array.
 To detect lines using this parameterization, the same voting process as described above is used.
 
 
-\subsection{Primitive-driven Region Growing}
-TODO
+\subsection{Clustering (Primitive-driven region growing)}
+Clustering or segmentation is a fundamental concept in data analysis that groups similar data points into clusters.
+"Most commonly, segmentation is treated as a local-to-global aggregation problem with similarity constraints employed to control the process."~\parencite{lukacs_faithful_1998}
+This means that the algorithms start by selecting a small subset of data points as initial regions, which are then expanded by adding similar points to the region.
+Homogenous regions are finally merged to form the final clusters.~\parencite{lukacs_faithful_1998}
 
+One common paradigm in the context of 3D geometric primitive detection is primitive-driven region growing.
+This approach starts by assigning a seed label to a point, and then iteratively checks neighboring points to see if
+their characteristics like color, Euclidean distance or normal orientation to match the seed labels characteristics within a certain threshold.
+Generic solutions often use a heuristic like the primitive fitting error, which is the mean square error between the point and the potential primitive.
+If the neighboring point matches, the label is assigned to the neighboring point and the process is repeated for the neighboring points.
+\cite{kaiser_survey_2019}
+
+For an extensive overview of other clustering paradigms like automatic clustering see~\cite{kaiser_survey_2019}.
 
 \section{Choosing an algorithm: Hough Transform vs RANSAC}\label{sec:choosing-an-algorithm}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\linewidth]{images/algos-compairision}
+    \caption{Compairison of Primitive Detection algorithm performance~\cite{kaiser_survey_2019}}
+    \label{fig:}
+\end{figure}
+
 
 \cite{kaiser_survey_2019} lists over 70 detection algorithms, many of which are specialized for specific application contexts
 like indoor scenes, outdoor scenes, urban buildings or individual objects.
@@ -231,7 +250,9 @@ As this thesis aims to develop a general end to end implementation for detecting
 algorithms that are widely used and applicable to a wide range of applications will be considered.
 Both the Hough Transform and the Random Sample Consensus (RANSAC) algorithm stand out as the
 most widely used methodologies in the field of primitive detection~\parencite{schnabel_efficient_2007}.
-This section provides a comparison of these two methodologies and a decision on which algorithm to use for the implementation.
+Primitive growing is also a widely used methodology, but it's considered to be the least robust to outliers and one of the slowest methods compared by~\parencite{kaiser_survey_2019},
+which might be a problem for the use-case of this thesis, as the depth data might contain a lot of noise and the performance of a mobile device is limited.
+As such, this section provides a comparison of these two methodologies and a decision on which algorithm to use for the implementation.
 
 In general, the performance of both algorithms varies based on the context of the application.
 With optimizations, both algorithms are suitable for a wide range of applications, but
