@@ -3,6 +3,7 @@ In this chapter, the individual algorithms, as well as the final performance of 
 The depth from motion algorithm will be evaluated based on different materials and their resulting confidence maps in section~\ref{sec:eval-depth-from-motion}.
 In section~\ref{sec:eval-ransac-algorithm}, the RANSAC algorithm will be evaluated based on synthetic data, as well as real world data.
 Finally, in section~\ref{sec:eval-combined}, the combined system performance will be evaluated.
+CloudCompare~\cite{daniel_girardeau-montaut_cloudcompare_nodate}, an open-source tool for working with 3D point clouds, will be used for the evaluation of the point clouds and the RANSAC algorithm.
 %klare begründung => Anforderung erfüllt ja oder nein
 
 \section{Depth from Motion}\label{sec:eval-depth-from-motion}
@@ -210,24 +211,26 @@ The full setup is shown in figure~\ref{fig:test-setup}.
 
 \subsection{Quantization Octree vs. Epsilon Octree}\label{subsec:quantization-octree-vs.-epsilon-octree}
 
-A point cloud with a resolution $s$ of 0.005m or 5mm is captured for both the quantization octree and the epsilon octree.
+A point cloud with a resolution of $s=0.005$m or 5mm is captured for both the quantization octree and the epsilon octree.
 The resulting segmented point cloud, the quantization octree has a total of about 90.000 points,
 while the epsilon octree only has about 20.000 points.
 This can be explained due to the quantization octree always ending up with the maximal resolution
 with enough data added, as it is functionally a grid.
 The epsilon octree, on the other hand, will only add points that are within the epsilon threshold of the current point,
 which means that gaps between points are at least epsilon wide, but can be wider.
-For example, if two points are exactly 2 epsilon apart, no points will be added between them.
+For example, if two points almost 2 epsilon apart, no points will be added between them and the gap will be approximately
+2 epsilon wide.
 As epsilon is set to $s$, the epsilon octree will have fewer points than the quantization octree with the same resolution.
 To compare the two datastructures, the quantization octree will be used with a lower resolution of $s=0.010$m,
-which results in a number of points of about 22.000, which is comparable to the epsilon octree.
+which results in a number of points of about 22.000, which is comparable to the epsilon octree at $s=0.005$m.
 
 Figure~\ref{fig:octrees-compairison} shows the raw and segmented point clouds of both datastructures.
 From inspecting the raw point cloud visually, it is apparent that the quantization octree has a higher amount of noise,
 While the cube is easily recognizable in the epsilon octree point cloud, the quantization octree point cloud has a lot of noise around the cube.
 The quantization octree also has more low-confidence points than the epsilon octree.
 This is due to the quantization octree always adding points to the cloud that fall within the threshold,
-while the epsilon octree only adds / updates points based on a condition that takes the confidence of the point into account.
+while the epsilon octree only adds / updates points based on a condition that takes the confidence of the point into account
+and ignores points lower confidence points that are close to higher confidence points.
 As such, the epsilon octree improves the accuracy of the point cloud when new, higher confidence points are added.
 
 
@@ -245,12 +248,13 @@ As such, the epsilon octree improves the accuracy of the point cloud when new, h
     \begin{subfigure}[b]{0.4\textwidth}
         \centering
         \includegraphics[width=0.9\linewidth]{images/eval-clouds-quant-segmented2}
-        \caption{Quantization Octree, $s=0.01$m}
+        \caption{Quantization Octree, $s=0.010$m}
     \end{subfigure}%
     \begin{subfigure}[b]{0.4\textwidth}
         \centering
         \includegraphics[width=0.9\linewidth]{images/eval-clouds-epsilon-segmented}
         \caption{Epsilon Octree, $s=0.005$m}
+        \label{fig:octrees-compairison-epsilon}
     \end{subfigure}%
 
     \caption{Comparison of Quantization Octree and Epsilon Octree. Raw point cloud on top, segmented on bottom.}
@@ -259,9 +263,12 @@ As such, the epsilon octree improves the accuracy of the point cloud when new, h
 
 To calculate statistics on the point clouds, the real box is measured and a primitive box with matching dimensions is created in CloudCompare.
 Using the \textit{fine registration (ICP)} feature, it is possible to align the point clouds to the primitive box.
-This allows calculating the cloud/mesh distance between the points of the point cloud and the primitive box.
+The underlying algorithm of the fine registration feature is the Iterative Closest Point (ICP) algorithm,
+which iteratively minimizes the mean square distance between a "model" shape and a "data" shape~\cite{besl_method_1992}.
+Once the point clouds are aligned to the primitive,
+the distance between the points of the point cloud and the primitive box can be calculated using the \textit{Cloud/Mesh Distance} feature in CloudCompare.
 The result of this calculation can be seen in figure~\ref{fig:octrees-compairison-stats}.
-From the histogram, it is apparent, that the quantization octree has higher noise than the epsilon octree.
+From the histogram, it is apparent that the quantization octree has higher noise than the epsilon octree.
 This can also bee seen in the standard deviation, which is 0.022 for the quantization octree and 0.011
 for the epsilon octree.
 This confirms the first suspicion from visual inspection of the point clouds.
@@ -486,5 +493,54 @@ Using a noise level of 0.02 with missing data yields no satisfactory results, ev
     \label{fig:test-both}
 \end{figure}
 
+\FloatBarrier
 \subsection{Tests on real world data}\label{subsec:tests-on-real-world-data}
+
+Figure~\ref{fig:real-data-ransac} show the results of the RANSAC algorithm on the dataset from figure~\ref{fig:octrees-compairison-epsilon}.
+Note that CloudCompare uses AABBs to represent the planes, instead of the convex hull as used in the application.
+In the segmented dataset, the cube is recognized correctly, with all 5 faces being recognized.
+In the raw dataset, the faces of the cubes are still recognized, but the algorithm also recognizes other planes in the dataset,
+some of which contain a subset of the points of the cube.
+This shows a limitation of the RANSAC algorithm, which is similar to~\cite{tarsha-kurdi_hough-transform_2007} findings,
+where plane primitives are constructed from points which do not belong to the same plane.
+\cite{schnabel_efficient_2007} solution to this problem is using a bitmap to detect connected shapes, as discussed in section~\ref{subsec:schnabels-efficient-ransac-algorithm}.
+The bitmap epsilon parameter can be used to adjust the resolution of the bitmap, with higher values leading to a stricter connected shape filter.
+In this case, the default value of this parameter was set to $b=0.024$.
+When raising it to $b=0.005$, the detection results of the cube are improved,
+while still detecting some artifacts that shouldn't be detected.
+With these parameters, the planes in the background are also no longer detected,
+as their effective sampling resolution is too low, which causes them to be filtered out by the connected shape filter.
+This shows that applying the algorithm to a dataset with vastly varying sampling resolutions will
+lead to suboptimal results, as the parameters need to be set for the whole dataset.
+This is problematic for the use case in combination with the depth from motion algorithm, as the Raw Depth API
+will have low confidence in areas with low texture, which will cause lower sampling rates, or completely missing data,
+which will in turn lead to connected shapes not being present and being filtered out.
+
+
+\begin{figure}[htbp]
+    \centering
+
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.7\linewidth]{images/results_cube}
+        \caption{Segmented dataset, automatic parameters}
+        \label{fig:real-data-ransac-segmented}
+    \end{subfigure}%
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.7\linewidth]{images/results_all}
+        \caption{Raw dataset, $n=400, e=0.024, b=0.047$}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[width=0.7\linewidth]{images/results-all-2}
+        \caption{Raw dataset, $n=400, e=0.024, b=0.005$}
+    \end{subfigure}%
+    \caption{RANSAC results}
+    \label{fig:real-data-ransac}
+\end{figure}
+
 
