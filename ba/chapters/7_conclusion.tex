@@ -1,28 +1,45 @@
 \chapter{Conclusion and Outlook}
 
-\section{Future Work}
+This thesis introduced a system for detecting primitives in a point cloud generated from depth data obtained from the Google ARCore API.
+The system utilizes a custom octree implementation to efficiently store and update the point cloud information in real time.
+The RANSAC implementation by~\cite{schnabel_efficient_2007}, is employed for plane detection.
+The resulting planes are then used to construct a triangle mesh representing the convex hull,
+which is overlaid on the camera feed.
 
-The system developed in this thesis provides a foundation for further research and development in
-the field of processing depth data from ARCore or similar APIs that provide a sequence of depth images, to create a mesh of a scene.
-However, the biggest current limitation of the system is the quality of the depth data, as the depth-from-motion technique
-used by ARCore has limitations when it comes to detecting depth in objects with minimal texture.
+%The performance of the algorithms and the overall system is thoroughly discussed in chapter~\ref{ch:evaluation}.
+The system demonstrates high accuracy in detecting planes and constructing meshes for highly textured objects,
+such as the test cube.
+However, the data quality of the Depth API with low-textured objects like walls prove to be a challenge for the system,
+as the depth data for these materials contains gaps, resulting in artifacts in the detection results.
+Mitigating these artifacts requires increasing the bitmap resolution, but this approach causes lower-textured materials to go undetected.
+For these reasons, the system is not yet suitable for creating a full mesh-representation of a scene.
 
-An interesting aspect for further research is thus exploring the data quality of different devices,
-with and without depth sensors, and how it affects the performance of the primitive detection algorithm.
-Using the Full Depth API instead of the Raw Depth API and testing if the interpolated depth data improves the results
-is also a valid point of further research.
+Nevertheless, the system developed in this thesis provides a solid foundation for further research and development in processing depth data from ARCore or similar APIs to create meshes from a scene.
+One major limitation is missing datapoints in the data obtained through the Depth from Motion technique used by ARCore.
+Therefore, evaluating the use of interpolated data from the Full Depth API and its potential for improving the results of the RANSAC algorithm would be worthwhile.
+Exploring the data quality of different devices, with and without depth sensors, and its impact on the performance of
+the primitive detection algorithm would also be an interesting direction for future research.
 
-As far as extending the system, implementing the detection of more complex primitives,
+Testing different primitive detection algorithms is another area for further research.
+Chapter~\ref{ch:primitive-detection-algorithms} provides an overview of various primitive detection algorithms,
+while~\cite{kaiser_survey_2019} provides an extensive survey of algorithms specialized for different contexts and application.
+The design of the system allows for easy integration of different algorithms without affecting other components and
+the ability to collect point data with a smartphone and transfer it to another device makes it easy
+to evaluate and compare different algorithms on real data collected from the Depth API\@.
+As a concrete example,~\cite{kaiser_survey_2019} lists that the Hough Transform is more robust to incomplete data than RANSAC\@.
+Consequently, it would be valuable to investigate whether the Hough Transform is more suitable for the depth data
+obtained from the Depth API\@.
+
+As far as expanding the system, implementing the ability to detect more complex primitives,
 such as cylinders and spheres, would be a logical next step.
-The part of detecting the actual primitives also provides a good starting point for further research,
-as there exist many different algorithms, specialized for different types of contexts and applications, as discussed in chapter~\ref{ch:primitive-detection-algorithms}.
-As the system provides the foundation for building the point cloud and rendering the primitives,
-it is possible to exchange the primitive detection algorithm with a different one, without changing other parts of the system
-and evaluate the performance of different algorithms for the specific use case.
+Addressing the issue of data quality also opens up opportunities for further research, such as automatic segmentation,
+classification, and labeling of objects in a scene.
+Another potential area of study is the development of a system that allows objects to be moved during a session.
 
-Solving the problem of data quality also opens up many new research possibilities,
-such as classifying and / or labeling the objects in the scene or implementing a system
-that allows for objects to be moved during a session.
+%In conclusion, the system developed in this thesis provides a robust foundation for building point clouds
+%and detecting primitives in data obtained from the Google ARCore Depth API.
+
+
 
 %
 %\begin{enumerate}
