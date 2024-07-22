@@ -19,30 +19,35 @@ This chapter goes over the technical background of the implementation and the co
 
 
 \section{Potential pitfalls}
-As the development device, Google Pixel 7, does not have a depth sensor,
-the Depth API will exclusively utilize depth-from-motion techniques to derive depth information from camera images, as later described in section~\ref{sec:technical-background-depth-from-motion}.
-However, it is important to note that camera-based depth-from-motion has limitations
+During the planning phase of this thesis, a potential pitfall of the system was identified.
+The development device, Google Pixel 7, lacks a depth sensor.
+Extracting depth information using the Depth API is still possible, however
+the Depth API will rely solely on Depth from Motion techniques to derive depth information from camera
+images as later described in section~\ref{sec:technical-background-depth-from-motion}.
+It is important to note that camera-based Depth from Motion has limitations
 when it comes to detecting depth in objects with minimal texture, such as walls.
 This drawback could potentially present challenges, especially when detecting walls or furniture with minimal texture,
 where the accuracy of depth information obtained from the Depth API may not be sufficient for accurate recognition. \parencite{google_llc_arcore_doc}
+This pitfall is addressed in the evaluation, chapter~\ref{ch:evaluation}.
 
 \section{Hard- and Softwarestack}
 
-The mobile application will be developed for Android and tested using a Google Pixel 7.
-The implementation will be carried out in Java/Kotlin using the Android Studio integrated development environment (IDE).
-The Google ARCore SDK will be used to access depth information about a scene.
-The SDK is available by default -- no additional libraries are required.
+The mobile application is developed for Android and tested using a Google Pixel 7.
+The implementation is carried out in Java/Kotlin using the Android Studio integrated development environment (IDE).
+The Google ARCore SDK is used to access depth information about a scene.
+The SDK is available by default, and no additional libraries are required.
 
-Algorithms will be implemented in C\texttt{++} in the \texttt{procedural-augmented-reality} project provided by Prof. Dr. Phillipp Jenke.
-This project will be integrated into the application and interfaced with Kotlin through a binding layer.
+Algorithms are implemented in C\texttt{++} in the \texttt{procedural-augmented-reality} project provided by Prof. Dr. Phillipp Jenke.
+The code of this thesis is integrated into the application and interfaced with Kotlin through a binding layer.
 
 \section{Libraries and external code}
-The following libraries and/or publicly available code has been used in this thesis:
+The following libraries and/or publicly available code are used in this thesis:
 \begin{itemize}
-    \item The RANSAC Implementation by \citeauthor{schnabel_efficient_2007} is used for primitive detection
-    and is further examined in this thesis. \parencite{schnabel_efficient_2007}
-    \item \citetitle{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API.
+    \item The RANSAC implementation by \citeauthor{schnabel_efficient_2007} is used for primitive detection
+    and is further examined in this thesis \parencite{schnabel_efficient_2007}
+    \item \citetitle{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API\@.
     It is used as a basis for unprojecting depth image pixels into world space in this thesis.~\parencite{google_llc_codelab_raw_depth}
+    \item The monotone chain implementation in C\texttt{++} to compute the convex hull, available on Wikibooks~\footfullcite{noauthor_algorithm_nodate}
 \end{itemize}
 
 \section{Testing}

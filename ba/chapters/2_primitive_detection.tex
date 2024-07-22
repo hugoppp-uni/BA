@@ -17,7 +17,7 @@ The input data representation varies by algorithm, with the most common types be
     \item \textbf{Point Clouds:} A set of 3D points in space representing the sampled surface of the real-world
     \item \textbf{Depth Images:} A 2D image where each pixel represents the distance to the camera, typically obtained from depth sensors
     \item \textbf{Image Sequences:} A sequence of 2D images from different viewpoints that are typically first convert to a point cloud or depth image for further processing, further discussed in section~\ref{sec:technical-background-depth-from-motion}
-    \item \textbf{Meshes:} A polygonal representation of surfaces, consisting of vertices, edges, and faces, typically generated from surface reconstruction algorithms.
+    \item \textbf{Meshes:} A polygonal representation of surfaces, consisting of vertices, edges and faces, typically generated from surface reconstruction algorithms.
     Not further considered in this thesis.
     For an explanation of meshes, see section~\ref{subsec:polygon-meshes}.~\cite{kaiser_survey_2019}
 \end{itemize}
@@ -29,12 +29,12 @@ the Hough Transform and the Random Sample Consensus (RANSAC) algorithm.
 
 \section{Categorization}
 \citeauthor{kaiser_survey_2019}~\cite{kaiser_survey_2019} reviewed over 70 detection algorithms, evaluating them based on their input/output data types,
-underlying methodology, supported primitive types, context of application and provides a rating for multiple criteria.
+underlying methodology, supported primitive types, context of application and provide a rating for multiple criteria.
 The authors categorize the underlying methodology of the algorithms into three categories:
 \begin{itemize}
-    \item \textbf{Stochastic:} algorithms that use random sampling to detect primitives, such as RANSAC
-    \item \textbf{Parameter Space:} algorithms that use a parameter space to detect primitives, such as the Hough Transform
-    \item \textbf{Clustering:}, for example primitive-driven region growing
+    \item \textbf{Stochastic}: algorithms that use random sampling to detect primitives, such as RANSAC
+    \item \textbf{Parameter Space}: algorithms that use a parameter space to detect primitives, such as the Hough Transform
+    \item \textbf{Clustering}: algorithms that aggregate data in a local-to-global fashion based on similarity constrains, such as primitive-driven region growing
 \end{itemize}
 
 The following sections provide an overview of the most common algorithms in each category.
@@ -59,14 +59,15 @@ in a set of data points $P$~\parencite{fischler_random_1981}:
 
 The algorithm has 3 main parameters that need to be set:
 \begin{itemize}
-    \item \textbf{Error tolernace:} the distance between a data point and the model under which the data point is considered an inlier
-    \item \textbf{Threshold $t$:} the number of inliers required to consider a model valid
-    \item \textbf{Number of iterations:} the number of times the algorithm will try to find a model with a consensus set of size $t$
+    \item \textbf{Error tolerance}: the distance between a data point and the model under which the data point is considered an inlier
+    \item \textbf{Threshold $t$}: the number of inliers required to consider a model valid
+    \item \textbf{Number of iterations}: the number of times the algorithm will try to find a model with a consensus set of size $t$
 \end{itemize}
 
 \subsection{Parameter Space (Hough Transform)}
-The Hough transform (HT) introduced in~\citeyear{hough_method_1962}~\parencite{hough_method_1962}
-is an algorithm that was originally designed to detect lines in images,
+The parameter space refers to a mathematical space which is defined by the parameters of the shape instead of their coordinates.
+The Hough transform (HT) introduced in~\citeyear{hough_method_1962}~\parencite{hough_method_1962} takes advantage of this concept.
+The algorithm was originally designed to detect lines in images,
 but has since been generalized to detect more complex shapes like circles~\cite{ballard_generalizing_1981} and 3D shapes~\cite{woodford_demisting_2014}.
 
 The HT works by creating a voting space based on parameters where similar shapes overlap\cite{kaiser_survey_2019}.
@@ -78,8 +79,8 @@ The right side shows the parameter space, where the axes represent the parameter
     y = mx + c
 \end{equation}
 Each point in image space creates a line in parameter space, as there are an infinite number of lines that pass through a point.
-All points on the line represent a valid parameterizations of the line.
-When all points are plotted in parameter space, local maxima represent possible lines that fit the input data.
+All points on the line represent a valid parameterization of the line.
+When all points are plotted in parameter space, local maxima represent the parameters of possible lines in image space.
 \begin{figure}[ht!]
     \centering
     \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
@@ -146,11 +147,12 @@ Each data point contributes votes to the shapes it aligns with, indicating the l
 By accumulating these votes, the parameters corresponding to the shape with the highest number of votes can be identified.
 After all data points have voted, the parameters with the highest votes reveal the shape that most accurately fits the input data.
 
-A problem that arises when using the Hough Transform using the standard parameterization of a line $y = mx + c$
+A problem that arises when using the Hough Transform with the parameterization of a line $y = mx + c$
 is that the slope $m$ can be infinite for vertical lines, which would require the parameter space to be infinite.
-To solve this problem, a parameterization using the angle from the x-axis $\theta$ and the distance from the origin $\rho$ is used:
+A more suitable parameterization for the Hough Transform is achieved by using the angle $\theta$
+from the x-axis and the distance $\rho$ from the origin:
 \begin{equation}
-    x \sin \theta + y \cos \theta = \rho = 0
+    x \sin \theta + y \cos \theta + \rho = 0
 \end{equation}
 \begin{figure}[ht!]
     \centering
@@ -213,23 +215,26 @@ To solve this problem, a parameterization using the angle from the x-axis $\thet
     \caption{Hough Transform using polar coordinates. Based on \cite{shree_k_nayar_first_2021}.}
     \label{fig:hough-transform-polar}
 \end{figure}
-This parameterization allows for the representation of all lines, including ones that are vertical,
-as the angle $\theta$ can be any value between $0$ and $\pi$; the distance $\rho$ between $0$ and the size of the image space.
-This also decreases the size of the accumulator array.
+This parameterization allows for the representation of vertical lines without the need for an infinite parameter space.
+The angle $\theta$ ranges from $0$ and $\pi$, representing all possible orientations of lines,
+while the distance $\rho$ can take any value between $0$ and the size of the image space.
+This parameterization not only allows for the representation of vertical lines
+but decreases the size of the accumulator array, as the parameter space is now finite.
 To detect lines using this parameterization, the same voting process as described above is used.
 
 
 \subsection{Clustering (Primitive-driven region growing)}
 Clustering or segmentation is a fundamental concept in data analysis that groups similar data points into clusters.
 "Most commonly, segmentation is treated as a local-to-global aggregation problem with similarity constraints employed to control the process."~\parencite{lukacs_faithful_1998}
-This means that the algorithms start by selecting a small subset of data points as initial regions, which are then expanded by adding similar points to the region.
+Algorithms start by selecting a small subset of data points as initial regions, which are then expanded by adding similar points to the region.
 Homogenous regions are finally merged to form the final clusters.~\parencite{lukacs_faithful_1998}
 
 One common paradigm in the context of 3D geometric primitive detection is primitive-driven region growing.
 This approach starts by assigning a seed label to a point, and then iteratively checks neighboring points to see if
-their characteristics like color, Euclidean distance or normal orientation to match the seed labels characteristics within a certain threshold.
+their characteristics like color, Euclidean distance or normal orientation match the seed labels characteristics within a certain threshold.
 Generic solutions often use a heuristic like the primitive fitting error, which is the mean square error between the point and the potential primitive.
-If the neighboring point matches, the label is assigned to the neighboring point and the process is repeated for the neighboring points.
+If the neighboring point matches, the label is assigned to the neighboring point.
+The process is repeated until no more points can be added to the region.
 \cite{kaiser_survey_2019}
 
 For an extensive overview of other clustering paradigms like automatic clustering see~\cite{kaiser_survey_2019}.
@@ -238,7 +243,7 @@ For an extensive overview of other clustering paradigms like automatic clusterin
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.6\linewidth]{images/algos-compairision}
+    \includegraphics[width=0.7\linewidth]{images/algos-compairision}
     \caption{Compairison of Primitive Detection algorithm performance~\cite{kaiser_survey_2019}}
     \label{fig:}
 \end{figure}
@@ -246,38 +251,39 @@ For an extensive overview of other clustering paradigms like automatic clusterin
 
 \cite{kaiser_survey_2019} lists over 70 detection algorithms, many of which are specialized for specific application contexts
 like indoor scenes, outdoor scenes, urban buildings or individual objects.
-As this thesis aims to develop a general end to end implementation for detecting and rendering primitives in AR,
-algorithms that are widely used and applicable to a wide range of applications will be considered.
-Both the Hough Transform and the Random Sample Consensus (RANSAC) algorithm stand out as the
-most widely used methodologies in the field of primitive detection~\parencite{schnabel_efficient_2007}.
-Primitive growing is also a widely used methodology, but it's considered to be the least robust to outliers and one of the slowest methods compared by~\parencite{kaiser_survey_2019},
-which might be a problem for the use-case of this thesis, as the depth data might contain a lot of noise and the performance of a mobile device is limited.
-As such, this section provides a comparison of these two methodologies and a decision on which algorithm to use for the implementation.
+As this thesis aims to develop a first end to end implementation for detecting and rendering primitives in AR,
+it is important to consider algorithms that are widely used and applicable to a wide range of applications.
 
-In general, the performance of both algorithms varies based on the context of the application.
-With optimizations, both algorithms are suitable for a wide range of applications, but
-the Hough Transform is more computationally expensive than RANSAC~\parencite{kaiser_survey_2019}.
-\cite{tarsha-kurdi_hough-transform_2007} found that its processing time is negligible in comparison to the Hough Transform.
-RANSAC is also more robust to noise and outliers~\parencite{kaiser_survey_2019}.
-It is also simpler and therefore easier to extend and adapt to different contexts~\parencite{tarsha-kurdi_hough-transform_2007, kaiser_survey_2019}.
+Among the various methodologies, the Hough Transform and the Random Sample Consensus (RANSAC) algorithm emerge as the most widely used in the field of primitive detection.~\parencite{schnabel_efficient_2007}.
+On the other hand, primitive growing is also a commonly used methodology but is considered to be the least robust to outliers and one of the slowest methods compared by~\parencite{kaiser_survey_2019}.
+This might pose a problem for the use-case of this thesis, as the depth data may contain a significant amount of noise and the performance of a mobile device is limited.
+Therefore, it is necessary to compare the Hough Transform and RANSAC and make decision on which algorithm to use for the implementation.
+
+Both algorithms show varying performance depending on the context of the application.
+With optimizations, both algorithms are suitable for a wide range of applications, but it is important to consider
+that the Hough Transform is more computationally expensive than RANSAC~\parencite{kaiser_survey_2019}.
+In a study,~\cite{tarsha-kurdi_hough-transform_2007} found that RANSACs processing time is negligible in comparison to the Hough Transform.
+Additionally, RANSAC is more robust to noise and outliers~\parencite{kaiser_survey_2019}.
+It is also a simpler algorithm which makes it easier to extend and adapt to different contexts~\parencite{tarsha-kurdi_hough-transform_2007, kaiser_survey_2019}.
 The main drawback of RANSAC is that results are not repeatable, as the algorithm is based on random sampling~\parencite{kaiser_survey_2019}.
 
 
-For a concrete example,~\cite{tarsha-kurdi_hough-transform_2007} analyzed the application of detecting building
-roofs as planes in 3D Lidar scans of cityscapes, and found that by default both RANSAC and Hough-Transform yield similar,
+In a specific application of detecting building roofs as planes in 3D Lidar scans of cityscapes,
+~\cite{tarsha-kurdi_hough-transform_2007} found that by default both RANSAC and Hough-Transform yield similar,
 insufficient results for their use-case.
 “That can be explained by the use of a pure mathematical principle,
 without taking into account the particularity of the building Lidar data. […] That is why
 [they] may detect a set of points which represents several roof planes or which belongs to several planes.”
-They also had difficulties to determine the parameters of Hough Transform,
-as the optimal values vary based on the characteristics of the point cloud.
-Motivated by RANSACS rapidity they investigated extending the RANSAC algorithm and with their improvements
-found that it produces satisfying results.
+
+Additionally, determining the optimal parameters for the Hough Transform proved challenging,
+as the optimal values heavily vary based on the characteristics of the point cloud.
+Motivated by RANSAC's speed, \citeauthor{tarsha-kurdi_hough-transform_2007} extended the algorithm and achieved satisfying results.
 
 In the end, both the Hough Transform and RANSAC are suitable algorithms for detecting primitives.
 However, the Hough Transform is more computationally expensive, harder to tune for specific contexts and less robust to noise and outliers.
 RANSAC also has a publicly available reference implementation in C\texttt{++} by~\parencite{schnabel_efficient_2007},
-which is e.g.\ used in the open source tool CloudCompare~\parencite{daniel_girardeau-montaut_cloudcompare_nodate} and can therefore be
-easily tested on ones own pointclouds without the need to write custom code, useful for evaluation, as can later be seen in chapter~\ref{ch:evaluation}.
+which is e.g.\ used in the open source tool CloudCompare~\parencite{daniel_girardeau-montaut_cloudcompare_nodate}.
+This allows for easy testing on ones own pointclouds without the need to write custom code,
+making it useful for evaluation purposes, as can later be seen in chapter~\ref{ch:evaluation}.
 
 Due to these reasons, the Random Sample Consensus (RANSAC) algorithm will be used for the implementation of the primitive detection in this thesis.

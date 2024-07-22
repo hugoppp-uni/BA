@@ -3,16 +3,12 @@
 This chapter goes into detail about the solution of the whole detection pipeline.
 All concepts and algorithms that are used will be explained in detail as needed.
 
-First, depth information is collected using the ARCore Raw Depth API via depth images and confidence images, as explained in section~\ref{sec:capturing-depth-images}.
-%Low confidence points under a certain threshold are filtered out.
-%Each pixel of the depth image is then projected into three-dimensional world-space, utilizing the camera's intrinsics.
-%An octree is then use to remove duplicate points as new data arrives.
-Then, in section~\ref{sec:building-the-point-cloud}, the depth images are converted into a point cloud.
+In the system, the first step involves collecting depth information via depth images and confidence images from the ARCore Raw Depth API, as explained in section~\ref{sec:capturing-depth-images}.
+Next, in section~\ref{sec:building-the-point-cloud}, the depth images are converted into a point cloud.
 The RANSAC algorithm is then applied to the point cloud to detect geometric primitives in section~\ref{sec:detecting-primitives-using-ransac}.
-Finally, rendering the primitives is discussed in section~\ref{sec:rendering-the-primitives}.
-For the scope of this thesis, only the detection of planes is implemented, however,
-it is possible to extend the pipeline to detect all other primitives detected by the RANSAC implementation by~\cite{schnabel_efficient_2007}.
-%todo
+Finally, rendering the primitives is explained in section~\ref{sec:rendering-the-primitives}.
+For the scope of this thesis, the implementation focuses on detecting planes.
+However, it is possible to extend the pipeline to detect all other primitives detected by the RANSAC implementation by~\cite{schnabel_efficient_2007}.
 
 %\subsection{Overview of the application application}
 %This section will provide an overview of the structure of the application.
@@ -30,7 +26,8 @@ For the purpose of this project, it is used to access depth information from the
 Google ARCore provides two APIs to access depth information -- the Depth API and the Raw Depth API\@.
 Both APIs work by estimating depth information from a sequence of monocular camera images using
 a technique called \textit{Depth from Motion}.
-When the user moves their device, the system takes a sequence of images and estimates the depth information from the differences between these images.
+When the user moves their device, the system takes a sequence of images and
+estimates the depth information by comparing the differences between these images to the position of the device at the time the images were taken.
 The technical details of this system are further discussed in section~\ref{sec:technical-background-depth-from-motion}.
 Google claims that that one "can get accurate results from 0 to 65 meters away,
 with best results between 0.5 and 5 meters."~\parencite{google_llc_arcore_doc}
@@ -76,15 +73,16 @@ No confidence image is provided.
     \caption{Full Depth vs. Raw Depth. Source: \cite{google_llc_arcore_doc}}
     \label{fig:depth-api-images}
 \end{figure}
-APIs have their use cases --
-the Depth API is preferred in cases where it is crucial to have a depth value for every pixel, such as calculating if an object should be occluded by the scene in an AR application,
-while the Raw depth API is preferred if accuracy of the depth information is crucial.
-As accuracy is crucial for primitive detection and depth information for every pixel is not required, the Raw Depth API is used in this project.
+
+Both Depth APIs have their use cases --
+the Full Depth API is preferred in cases where it is crucial to have a depth value for every pixel, such as calculating if an object should be occluded by the scene in an AR application,
+while the Raw Depth API is preferred if accuracy of the depth information is crucial.
+As accuracy is crucial for primitive detection and depth information for every pixel is not required, the Raw Depth API is used in this thesis.
 
 \subsection{Technical Background: Depth From Motion}\label{sec:technical-background-depth-from-motion}
 Depth from motion is a technique developed by Google that estimates depth information from a sequence of monocular camera images
 and is used by the ARCore Depth API to provide depth information.
-Its primary purpose is to enable AR applications that rely on depth information on devices lacking a dedicated depth sensor or numerous cameras.
+Its primary purpose is to enable AR applications that rely on depth information on devices lacking a dedicated depth sensor or multiple cameras.
 This sections provides a brief overview of the workings of the Depth from Motion system by ~\parencite{valentin_depth_2018}.
 
 \begin{figure}[ht!]
@@ -147,12 +145,11 @@ The process consists of three steps:
 The Raw Depth API provides a confidence image that indicates the reliability of the depth information for each pixel.
 To improve the accuracy of the point cloud, points with low confidence are filtered out.
 A threshold value is set, below which points are discarded.
-Filtering out low confidence points early in the pipeline will also improve performance,
+Filtering out low confidence points early in the pipeline also improves performance,
 as fewer points need to be processed in the following steps.
 
 \subsection{Transforming Depth Image Pixels to World Coordinate Points}
-The Depth API provides depth images where each pixel holds the distance
-from the camera in millimeters.
+The Depth API provides depth images where each pixel holds the distance from the camera in millimeters.
 Before inserting points into the point cloud, the pixel values of the depth image
 first need to be converted into 3-dimensional coordinates relative to a fixed origin in the world.
 This section will first provide a brief overview of the mathematical concepts required to understand the transformation process.
@@ -212,8 +209,8 @@ In the case of a translation, the translation matrix is a 4x4 matrix with the tr
     \end{bmatrix}
 \end{equation}
 
-Note that the fourth element $w$ is not always 1, as later explained in the section about perspective projection.
-Thus, after applying the transformation matrix, the resulting matrix is then divided by the fourth element $w$.
+Note that transformation can also effect the fourth element $w$, as later explained in the section about perspective projection.
+To account for this, the resulting matrix is then divided by the fourth element $w$.
 The cartesian coordinates of the point are then the first three elements of the resulting matrix.
 
 One advantage of using matrices to represent transformations is that multiple transformations can be combined by
@@ -223,82 +220,19 @@ The resulting matrix will then apply all transformations in the order they were 
     p' = (M_n \cdots M_3 \cdot M_2 \cdot M_1) \cdot p
 \end{equation}
 If multiple transformations were to be applied to thousands of points,
-it would be more efficient to multiply the transformation matrices once and then apply the resulting matrix to all points.
-Graphics Processing Unit's (GPU's) also contain hardware implementation of 4x4 matrix operations,
-which further increases the performance of matrix operations over other methods.
-Transformation matrices can also be inverted ($M^{-1}$) to apply the inverse transformation, or in other words 'undo' the transformation.
+it would be more efficient to multiply the transformation matrices once and then apply the resulting matrix to all points~\cite{de_vries_learn_2020}.
+Graphics Processing Unit's (GPUs) also contain hardware implementation of 4x4 matrix operations,
+which further increases the performance of matrix operations over other methods~\cite{dorner_virtual_2019}.
+Transformation matrices can also be inverted ($M^{-1}$) to apply the inverse transformation, or in other words 'undo' the transformation~\cite{dorner_virtual_2019}.
 
 \subsubsection{Coordinate Systems and Basis Change}
 
-Different coordinate systems, also known as spaces, are commonly used to represent points in space.
-This simplifies calculations.
-For instance, consider a camera inside a moving car, filming a person inside the car.
-A smooth camera movement around the person is to be implemented.
-If calculations are performed based on coordinates relative to the world (world space),
-the movement of the car needs to be accounted for in the calculation for the camera movement in each frame.
-However, by using the local coordinate system of the car, where all points are relative to the car itself (local space),
-calculations can be simplified.
-
-This section provides an overview of coordinate systems and the process of transforming points between systems, as detailed by~\cite{dorner_virtual_2019}.
-%As examples, the world and local space are used, as they are required to unproject the depth image into world space.
-%The usage of these coordinate systems in context of the OpenGL rendering pipeline will also be covered in section~\ref{sec:coordinate-systems}.
-
-In the context of linear algebra,
-a basis of a $n$ dimensional vector space is a set of $n$ vectors that are both linearly independent
-and capable representing any geometric vector in the vector space as a linear combination of these basis vectors.
-If the basis vectors are orthogonal and normalized,
-they are called an orthonormal basis (provided that the inner product is defined on the vector space).
-Combined with an origin $O$ it defines a cartesian coordinate system $K$.
-Using that coordinate system, any point $P$ in the vector space can be represented with a $n$ dimensional
-vector$\vec{p}$ relative to the origin $O$.
-In the case of a three-dimensional space and basis vectors $\vec{u}, \vec{v}, \vec{w}$, this is expressed as:
-\begin{equation}
-    P = O + a\vec{u} + b\vec{v} + c\vec{w} = O + \vec{p}
-\end{equation}
-
-Consider a point $P$ in local space that needs to be transformed into world space.
-This transformation requires finding a transformation matrix $M$ that transforms points
-from local space $K$ to world space $K'$.
-The transformation can be achieved using the formula:
-\begin{equation}
-    p' = M\cdot p
-\end{equation}
-
-$K$ and $K'$ are both three-dimensional cartesian coordinate systems, with 3 basis vectors and one origin each.
-Let the basis vectors of $K'$ be $\vec{u}, \vec{v}, \vec{w}$ and the origin $O$.
-Note that these are described as relative to $K$.
-A 4x4 transformation matrix $M'$ that transforms points from $K'$ to $K$ is then constructed as follows:
-\begin{equation}
-    M' = \begin{bmatrix}
-             \vec{u_x} & \vec{v_x} & \vec{w_x} & O_x \\
-             \vec{u_y} & \vec{v_y} & \vec{w_y} & O_y \\
-             \vec{u_z} & \vec{v_z} & \vec{w_z} & O_z \\
-             0         & 0         & 0         & 1
-    \end{bmatrix}
-\end{equation}
-
-This matrix can then be used to transform points from $K'$ to $K$, by multiplying the point as homogenous coordinates with $M'$.
-Consequently, the transformation matrix $M$ that transforms a point $P$ from $K$ to $K'$ is the inverse of $M'$:
-\begin{equation}
-    p' = M'^{-1} \cdot p = M\cdot p
-\end{equation}
-
-A transformation matrix, that transforms points from local space to world space can also be referred as $T_{wl}$:
-\begin{equation}
-    p_w = T_{wl} \cdot p_l
-\end{equation}
-
-\paragraph{Common Coordinate Systems}\label{sec:coordinate-systems}
-The following coordinate systems are commonly used in computer graphics, as illustrated in figure~\ref{fig:coordinate-systems}.
-In these coordinate systems, coordinates are relative to:
-\begin{enumerate}
-    \item the objects origin (\textit{Local Space})
-    \item the worlds origin (\textit{World Space})
-    \item the cameras origin (\textit{View Space})
-    \item the bottom left corner of the screen in 2D (\textit{Screen Space})
-\end{enumerate}
-Note that in rendering, an intermediate coordinate system between view and screen space is often used (clip space),
-which is omitted here for clarity.
+Different coordinate systems, also known as spaces~\cite{de_vries_learn_2020}, are commonly utilized to represent points
+in space, allowing for simplified calculations.
+To illustrate this, consider a camera inside a moving car, filming a person inside the car.
+In order to implement smooth camera movement around the person,
+calculations based on coordinates relative to the world (world space) would need to account for the car's movement in each frame.
+By using the car's local coordinate system, where all points are relative to the clarity.~\cite{de_vries_learn_2020}
 
 To transform points between these systems, their positions are multiplied with a corresponding transformation matrix.
 To improve performance, these matrices are often combined to a singular matrix, called the MVP-Matrix,
@@ -321,14 +255,14 @@ To illustrate this, consider a simpel pinhole camera model, as shown in figure~\
     \caption{Pinhole camera model. Source: \href{https://commons.wikimedia.org/wiki/File:Pinhole-camera.svg}{Wikimedia Commons}}
     \label{fig:pinhole-camera-model}
 \end{figure}
-The camera is represented as a box with a small hole on one side.
-Light rays from the scene pass through the hole and project an inverted image onto the opposite side of the box.
-The red lines each represent the light ray of the top and bottom of the tree.
+The camera is represented as a box with a small hole (aperture) on one side.
+This aperture allows light rays from the scene to pass through and form an inverted image on the opposite side of the box
+In the diagram, the red lines depict the light rays corresponding to the top and bottom of the tree.
 The closer the tree is to the camera, the smaller it needs to be to fit inside the two rays,
 or in other words to appear the same size on the image plane.
-This is the principle of perspective projection and can be achieved by dividing the
+This concept is known as perspective projection and can be achieved by dividing the
 $x$ and $y$ coordinates of a point by its $z$ coordinate.
-During this process, the z coordinate is lost and can't be recovered. \cite{szeliski_computer_nodate}
+During this process, the z coordinate is lost and can't be recovered. \cite{szeliski_computer_2022}
 \begin{equation}
     P_s = \begin{bmatrix}
               x/z \\
@@ -338,15 +272,14 @@ During this process, the z coordinate is lost and can't be recovered. \cite{szel
 \end{equation}
 
 This however, does not account for the geometry of the camera itself -- the camera intrinsics.
-These intrinsics are a set of parameters that describe the camera's geometry and are used to calculate the projection.
+These intrinsics are a set of parameters that describe the camera's geometry and are used to calculate the projection~\cite{szeliski_computer_2022}.
 The two most important parameters are the focal length $f$ and the image center $c$, as shown in figure~\ref{fig:intrinsics-3d}.
-
 
 \begin{figure}[ht!]
     \centering
     \begin{subfigure}[t]{0.45\textwidth} % Adjusted from 0.4 to 0.45
         \includegraphics[width=1\linewidth]{images/intrinsics}
-        \caption{Geometry of a camera with an image plane height $H$, width $W$, focal length $f$, and principal point $c$. Source: \cite{szeliski_computer_nodate}}
+        \caption{Geometry of a camera with an image plane height $H$, width $W$, focal length $f$, and principal point $c$. Source: \cite{szeliski_computer_2022}}
         \label{fig:intrinsics-3d}
     \end{subfigure}%
     \hspace{0.05\textwidth} % Added space between subfigures
@@ -354,20 +287,20 @@ The two most important parameters are the focal length $f$ and the image center 
         \resizebox{\linewidth}{!}{
             \input{images/intrinsics2d}
         }
-        \caption{Projection of an observed point $A$ onto the image plane in the $y$-direction. Based on \cite{kris_kitani_computer_2017}}
+        \caption{Projection of an observed point $A$ onto the image plane in the $y$-direction. Based on~\cite{kris_kitani_computer_2017} and~\cite{google_llc_arcore_doc}}
         \label{fig:intrinsics-2d}
     \end{subfigure}%
     \caption{Camera intrinsics}
     \label{fig:intrinsics}
 \end{figure}
 
-The focal length $f$ is the distance between the image plane and the pinhole of the camera.
+The focal length $f$ is the distance between the image plane and the aperture of the camera.
 The image center $c$ (also called principal point) is the point where the principal axis $z_c$
 intersects the image plane, denoted in pixel coordinates.
 Figure~\ref{fig:intrinsics-2d} shows the projection of an observed point $A$ onto the image plane.
 Note that the image plane is displayed in the $-z_c$ direction, as opposed to $+z_c$ direction.
-It shows how focal length $f$ affects the $y$-coordinate of the projected point.
-\cite{szeliski_computer_nodate, google_llc_arcore_doc, kris_kitani_computer_2017}
+It shows how the focal length $f$ affects the $y$-coordinate of the projected point.
+\cite{szeliski_computer_2022, google_llc_arcore_doc, kris_kitani_computer_2017}
 This can be simulated by using ones fingers to form a square that represents a virtual
 image plane and moving it closer or farther to the eye.
 The farther away the square is (higher focal length), the less field of view the square covers.
@@ -390,7 +323,7 @@ a more intuitive way to understand different focal lengths can be used by introd
             0 & 0  & 1
     \end{bmatrix}
 \end{equation}
-\parencite{szeliski_computer_nodate}
+\parencite{szeliski_computer_2022}
 
 
 
@@ -410,8 +343,8 @@ To convert these points into world space, the transformations need to be applied
 %thus the projection matrix directly transforms from view space to screen space.
 Another way to think about this procedure is to conceptualize the unprojecting step as transforming the pixels into a local space
 relative to the camera, as defined by the camera's position, up and look vector.
-Subsequently, the point is transformed from the cameras local space into world space using the cameras model matrix.
-For simplicity and to avoid confusion when transforming into different directions, the second approach is used going forward.
+Then, the point is transformed from the cameras local space into world space using the cameras model matrix.
+For simplicity and to avoid confusion when transforming into different directions, the latter approach is used going forward.
 
 The first step is to unproject the pixels from screen space to the cameras local space $K_l$, as explained by~\cite{google_llc_codelab_raw_depth, google_llc_arcore_doc}.
 Referring to figure~\ref{fig:intrinsics} and
@@ -419,8 +352,8 @@ Referring to figure~\ref{fig:intrinsics} and
 the value given by the Depth API at $a$ is equal to the length of $CA$ projected onto the principal axis.
 This can also be referred as the z-coordinate of $A$ relative to the camera origin $C$."~\parencite{google_llc_arcore_doc}
 
-The depth value is used to calculate the point in local space relative to the camera $K_l$ using the camera intrinsics.
-The intrinsics can be retrieved from the API using the method \texttt{frame.getCamera().getTextureIntrinsics()}.
+Using the camera intrinsics, the depth value is transformed to the local space relative to the camera $K_l$.
+The camera intrinsics can be retrieved from the API using the method \texttt{frame.getCamera().getTextureIntrinsics()}.
 However, this method returns the intrinsics of the camera image, which differs from the depth image, as the depth image usually has a lower resolution.
 To calculate the focal length $f$ and camera center $c$ from the provided intrinsics $K$, depth image $D$ and camera image dimensions $x_{Dim}, y_{Dim}$,
 the provided focal length and principal point are scaled by the ratio of the dimensions of the depth image and the camera image:
@@ -445,9 +378,8 @@ These values are then used to unproject the point into local space relative to t
 as evident from figure~\ref{fig:intrinsics}.
 
 As the resulting point is in a local space relative to the camera $K_l$, it needs to be transformed into world space $K_w$.
-To transform it into world space the model matrix is retrieved by calling
+To transform it into world space, the camera pose is retrieved and converted to a matrix:
 \texttt{cameraPoseAnchor.getPose().toMatrix(modelMatrix, 0)}.
-%The model matrix is a transformation matrix that transforms points from a local space to world space.
 By multiplying the model matrix $T_{wl}$ with $p_l$, the point is transformed into world space.
 \begin{equation}
     p_w = T_{wl} \cdot p_l
@@ -467,19 +399,18 @@ One possible approach is to use a three-dimensional grid, where each cell repres
 Alternatively, a more advanced approach involves utilizing a spatial data structure such as an octree,
 which can provide improved performance.
 
-\paragraph{Octree}
-An octree is a spatial tree data structure where each node has exactly eight children.
-The tree can be used to sparsely partition three-dimensional space into smaller cubes and allows for efficient
-insertion and traversal in logarithmic time.
-"For the definition a simple recursive splitting of [cubes] is continued until there is only one point in a [cube]."
-\parencite{gabriel_zachmann_geometric_2002}
-
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.65\textwidth]{images/octree}
     \caption{Octree. Source: \href{https://commons.wikimedia.org/wiki/File:Octree2.svg}{Wikimedia Commons}}
     \label{fig:octrree}
 \end{figure}
+\paragraph{Octree}
+An octree is a spatial tree data structure where each node has exactly eight children.
+The tree can be used to sparsely partition three-dimensional space into smaller cubes and allows for efficient
+insertion and traversal in logarithmic time.
+"For the definition a simple recursive splitting of [cubes] is continued until there is only one point in a [cube]."
+\parencite{gabriel_zachmann_geometric_2002}
 
 \subsubsection{Fixed Depth Octree}
 A straightforward approach to utilize an octree for point cloud storage is to use a variation of the octree with a fixed depth.
@@ -497,17 +428,19 @@ allows for fine-tuning of the threshold distance between points under which poin
 
 One advantage of an octree with a fixed width is simplicity, as points are always inserted at the same depth and deletion of points is not required.
 The biggest drawback is that the resolution of the point cloud is fixed and needs to be chosen beforehand.
-As the accuracy of the depth images differ between devices and other conditions like lighting and texture of the captured surface,
-it is difficult to choose a fixed resolution that works for all cases:
+As the accuracy of the depth values differs based on conditions like lighting and texture of the captured surface,
+it is difficult to choose a fixed resolution that works for all values.
 
-When using a resolution that is too high, some surfaces might be detected as multiple surfaces instead of one.
-This is due to the same point being detected multiple times with slightly different depth values.
-If the uncertainty of the depth data is too high for the chosen resolution,
-points representing the same point in space will be added to neighboring cells of the octree.
-In the case of planes, this will lead to points in multiple cells across the normal of the plane,
-(increasing the thickness of the plane).
-The RANSAC algorithm will then detect multiple planes instead of one.
+%When using a resolution that is too high, some surfaces might be detected as multiple surfaces instead of one.
+%This is due to the same point being detected multiple times with slightly different depth values.
+%If the uncertainty of the depth data is too high for the chosen resolution,
+%points representing the same point in space will be added to neighboring cells of the octree.
+%In the case of planes, this will lead to points in multiple cells across the normal of the plane,
+%(increasing the thickness of the plane).
 
+Quantization might also lead to worse detection results for surface that do not align with the axis of the octree.
+For example, a plane that is tilted by a couple of degrees will lead to aliasing,
+meaning that the distance between the points and the fitted plane will vary across the plane, as demonstrated in figure~\ref{fig:aliasing}.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.35\linewidth]{images/aliasing}
@@ -515,21 +448,24 @@ The RANSAC algorithm will then detect multiple planes instead of one.
     \label{fig:aliasing}
 \end{figure}
 
-Quantization might also lead to worse detection results for surface that do not align with the axis of the octree.
-For example, a plane that is tilted by a couple of degrees will lead to aliasing,
-meaning that the distance between the points and the fitted plane will vary across the plane, as demonstrated in figure~\ref{fig:aliasing}.
 
-\subsubsection{Octree with Neighborhood Condition}
-%todo
-To utilize an octree for point cloud storage, the point coordinates and its data is saved in the leaf nodes of the octree.
-In this case, each node of the octree saves the coordinate of the point and its confidence value.
+\subsubsection{Octree with Neighborhood}
+
+To improve upon the fixed depth octree, the actual point coordinates can be saved in a given node of the octree.
+%Another way to use an octree for point cloud storage is to the point coordinates and its data is saved in the leaf nodes of the octree.
+Furthermore, the confidence value can also be stored, in order to determine how accurate it's position is.
+This allows to improve the accuracy of the data as new, higher confidence data arrives.
+In order to achieve this, custom logic on inserting new points is required:
 When inserting a new point with a certain confidence value, a range query with a radius calculated from the confidence value
 is performed to find all nodes within a certain distance of the point to be inserted.
-If no node is found, a new leaf node is created and the point is inserted.
-If a node is found with a lower confidence value, the new point is inserted and the old node is removed.
-If a node is found with a higher confidence value, the new point is not inserted and discarded.
+\begin{itemize}
+\item If no node is found, a new leaf node is created and the point is inserted.
+\item If a node is found with a lower confidence value, the new point is inserted and the old node is removed.
+\item If a node is found with a higher confidence value, the new point is not inserted and discarded.
+\end{itemize}
 Using this approach, duplicate points are removed and adjusting the multiplier for the radius of the range query
 allows for fine-tuning of the threshold under which points are considered duplicates.
+From here on, this approach will be referred to as the \textit{Epsilon Octree}.
 
 \paragraph{Range Query}
 To check if an octree node, which is an axis-aligned bounding box (AABB) with equal sides, and a sphere intersect,
@@ -557,28 +493,58 @@ where $C$ is the center of the sphere, $B$ is the center of the AABB, and $s$ is
 \paragraph{Deleting nodes}
 Deleting nodes from an octree is a non-trivial task~\parencite{samet_design_1989, finkel_quad_1974}, as it may require restructuring the tree to maintain the octree properties.
 \citeauthor{finkel_quad_1974}~\parencite{finkel_quad_1974} suggest reinserting all child nodes of the deleted node,
-while [] propose a more efficient method, that tries to replace the deleted node with a suited node, such that the octree properties are maintained.
+while~\cite{samet_deletion_1980} propose a more efficient method that tries to replace the deleted node with a suited node, such that the octree properties are maintained.
 For simplicity, the first approach is used.
 In addition, an optimization is made:
 As nodes are only deleted when a new point is inserted with a higher confidence value,
 it is possible to simply update the old node with the new position, in case the octree properties are not violated.
 This is the case when the new point is within the same cell as the old point.
-The tree is first traversed once to check if there exists such a node in the search radius.
-If such a node is found, the old node is updated and the new point is not inserted.
-If such a node is not found, the old node is deleted as by~\cite{finkel_quad_1974} and the new point is inserted.
-
+The tree is first traversed once to find the node that needs to be deleted.
+If the node is in the same cell as the new point to be inserted, the old node is updated with the data of the new point.
+Otherwise, the old node is deleted as by~\cite{finkel_quad_1974} and the new point is inserted.
 
 \section{Detecting Primitives using RANSAC}\label{sec:detecting-primitives-using-ransac}
 
 To detect primitives in the point cloud, the Random Sample Consensus (RANSAC) algorithm is used,
 as discussed in section~\ref{sec:choosing-an-algorithm}.
 As~\cite{kaiser_survey_2019} considers~\parencite{schnabel_efficient_2007} to be the reference implementation of RANSAC
-and its code is publicly available in C\texttt{++}, it will be used for this thesis.
+and its code is publicly available in C\texttt{++}, it will be used in this thesis.
 
-\subsection{Schnabel's Efficient RANSAC Algorithm}
-TODO
+\subsection{Schnabel's Efficient RANSAC Algorithm}\label{subsec:schnabels-efficient-ransac-algorithm}
+\citeauthor{schnabel_efficient_2007}~\cite{schnabel_efficient_2007} extended the RANSAC algorithm to be more efficient
+and robust for detecting primitives.
+Their approach is specifically designed for detecting planes, spheres, cylinders, cones and tori in 3D point clouds.
+The key improvements over the original RANSAC method are in the following areas:
+\begin{itemize}
+    \item \textbf{Sampling strategy}: "Since shapes are local phenomena, the a priori probability that two points belong to the same shape is higher the smaller the distance between the points"~\parencite{schnabel_efficient_2007}.
+    To take advantage of this fact, they employed non-uniform sampling based on locality, which increases the probability of selecting points that belong to the same shape.
+    They provide an example of the magnitude of this improvement: For a point cloud consisting of 341,587 points that contains a cylinder with 1066 points, uniform sampling would require 151,522,829 shapes candidates to be drawn, while their method only requires 64,929 candidates.
+    \item \textbf{Score function}: They introduce a scoring function that evaluates the quality of a shape candidate.
+    The score function is based on 3 parameters: The support of the shape (number of inliers), the deviation of the normals and a connectivity measure, that discards shapes that are not the largest connected component on the shape.
+    \item \textbf{Refitting}: After a shape is detected, they refit the shape to the inliers using a least-squares method~\cite{shakarji_least-squares_1998}, and include points that are within a certain distance of the shape to declutter the point cloud.
+\end{itemize}
+
+To find connected components in the point cloud, they use a bitmap in the parameter domain of the shape.
+The parameter domain refers to a parameters defining the shape, e.g. $u, v$ for a plane.
+They then set a pixel in the bitmap for each point that projects into it.
+The points of the largest connected component in the bitmap are then considered inliers of the shape,
+while the rest are outliers and discarded / kept in the dataset for further iterations.
+Optimally, the bitmaps resolution should be set to the sampling resolution of the point cloud.
+For irregularly sampled point clouds, they recommend choosing the minimal resolution that is satisfied throughout the point cloud as the bitmap resolution~\cite{schnabel_efficient_2007}.
+Later on this will prove to be a challenge in combination with data from the Depth from Motion algorithm, as described in section~\ref{subsec:ransac-tests-on-real-world-data}.
+
+The algorithm requires the following parameters to be set:
+\begin{itemize}
+    \item \textbf{Epsilon $\epsilon$}: The maximum distance between a point and the shape to be considered an inlier.
+    \item \textbf{Bitmap Epsilon $\beta$}: The resolution of the bitmap used to determine connected shapes.
+    \item \textbf{Normal threshold $\alpha$}: The maximum deviation of the normals of the points to the shape.
+    \item \textbf{Minimum support $n$}: The minimum number of inliers a shape needs to have to be considered a valid shape.
+    \item \textbf{Overlook probability}: The probability that a point is overlooked by the sampling strategy. A higher value increases the number of shape candidates drawn but also the probability of finding the best candidate shape.
+\end{itemize}
 
 \subsection{Wrapping C\texttt{++} Code in Java/Kotlin Using SWIG}
+As the RANSAC algorithm is implemented in C\texttt{++} and the application is developed for Java/Kotlin,
+the C\texttt{++} code needs to be wrapped to be used in the application.
 To automatically generate the necessary code to interface with Java/Kotlin,
 the Simplified Wrapper and Interface Generator (SWIG) is used.
 SWIG is "a program development tool that automatically generates the bindings between C/C\texttt{++}
@@ -589,7 +555,7 @@ necessary code to interface with the target language.
 An example interface file is shown in codeblock~\ref{lst:swig_interface}.
 First, the module name is defined using the \texttt{\%module} directive.
 Then, in a block defined by the \texttt{\%\{} and \texttt{\%\}} directives,
-the C\texttt{++} code that is necessary for compilation and should thus be included is defined.
+the C\texttt{++} code that is necessary for compilation and should be included is defined.
 Finally, the \texttt{\%include} directive is used to declare all classes and functions that should be wrapped by SWIG\@.
 In the case of template functions and classes, the \texttt{\%template} directive also needs to be used
 to explicitly instantiate a template using a specific name.
@@ -613,9 +579,6 @@ In the case of generating interfaces in Java, multiple files will be generated b
     \item One java file for each wrapped C\texttt{++} class that internally calls the JNI functions declared in \texttt{backendJNI.java}
 \end{itemize}
 
-
-
-
 \subsection{Porting the Efficient RANSAC Algorithm Library to the ARM Architecture}
 %The code for~\citetitle{schnabel_efficient_2007} by \citeauthor{schnabel_efficient_2007} is implemented in C\texttt{++}
 %and designed to be compiled for the x86 architecture.
@@ -635,10 +598,12 @@ Most notably, the error \texttt{explicit qualification required} is fixed by add
 Other adjustments include fixes like removing obsolete keywords and changing deprecated
 functions of the C++ standard library with their modern counterparts.
 
+This example illustrates that wrapping code into another architecture is not always straightforward and comes with its
+own set of challenges.
 
 
 \section{Rendering the Primitives}\label{sec:rendering-the-primitives}
-With the primitives detected using the RANSAC algorithm, the next step is to render them.
+With the primitives detected using the RANSAC algorithm, the next step is to render them in the AR scene.
 This section first provides an overview of the OpenGL rendering pipeline in section~\ref{subsec:opengl-rendering-pipeline}
 and the necessary steps to render the planes in section~\ref{subsec:rendering-planes}.
 As planes are infinite in size, section~\ref{subsec:constraining-planes-to-the-area-where-the-points-are-located}
@@ -647,7 +612,7 @@ using the convex hull algorithm.
 
 \subsection{OpenGL Rendering Pipeline}\label{subsec:opengl-rendering-pipeline}
 This section provides an overview of the OpenGL rendering pipeline and the necessary steps to render the primitives.
-All subsections are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020}.
+Explanations are based on the book~\citetitle{de_vries_learn_2020} by \citeauthor{de_vries_learn_2020}~\parencite{de_vries_learn_2020} unless stated otherwise.
 
 \subsubsection{Polygon Meshes}\label{subsec:polygon-meshes}
 
@@ -669,9 +634,9 @@ Polygon meshes can be represented many ways.
 The simplest representation is a list of vertices, where the vertices are stored in a specific order to form the polygons.
 In OpenGL, this can be achieved by using the \texttt{glDrawArrays} function,
 which takes a buffer of vertices and draws them as triangles.
-The problem with this approach is that in meshes vertices are often shared between multiple polygons,
-as is apparent in figure~\ref{fig:mesh-overview}.
-To render the cube in the figure, only 8 vertices are required,
+However, a drawback of this approach is that vertices are often shared between multiple polygons,
+resulting in redundant vertex data, as is apparent in figure~\ref{fig:mesh-overview}.
+To render the cube in the figure~\ref{fig:mesh-overview}, only 8 vertices are required,
 but since each of the 6 faces is rendered with two triangle,
 a total of 36 vertices would be required when using this approach.~\cite{dorner_virtual_2019, de_vries_learn_2020}
 
@@ -683,20 +648,16 @@ a total of 36 vertices would be required when using this approach.~\cite{dorner_
     \label{fig:index-buffer}
 \end{figure}
 
-A common solution to this problem is to use a data structure known as the indexed face-set, which consists of two lists -- one for the vertices and one for the indices.
+To address this issue, a common solution is the use of an indexed face-set, which is a datastructure consisting
+of two lists -- one for the vertices and one for the indices.
 The vertices list contains all unique vertices of the mesh, while the indices list contains the indices of the vertices that form the polygons.
-In OpenGL, this can be achieved by using the \texttt{glDrawElements} function, which requires two buffers to be bound
--- one for the vertices, commonly referred as VBO (Vertex Buffer Object), and one for the indices, commonly referred as EBO (Element Buffer Object).
-The concept of indexing is illustrated in figure~\ref{fig:index-buffer}.~\cite{dorner_virtual_2019, de_vries_learn_2020}
-
-%the cameras origin (\textit{Clip Space}) with visible coordinates between -1 and 1 (normalized device coordinates) in all dimensions (frustum).
-%Coordinates outside the frustum are clipped.
-%Perspective projection can be applied here, more details in the next subsection.
-
-%One exception is the viewport transformation,
-%which is applied by OpenGL automatically based on the viewport settings provided via the \texttt{glViewport} function.
+In OpenGL, the \texttt{glDrawElements} function is used to draw indexed meshes
+It which requires two buffers to be bound:
+The Vertex Buffer Object (VBO) for the vertices and the Element Buffer Object (EBO) for the indices.~\cite{dorner_virtual_2019, de_vries_learn_2020}
+Figure~\ref{fig:index-buffer} illustrates the concept of indexing.
 
 \subsubsection{Shaders}\label{subsec:shaders}
+%here
 
 This section provides an overview of shaders and their role in the rendering pipeline as detailed by~\cite{de_vries_learn_2020}.
 
@@ -724,9 +685,9 @@ which range from -1 to 1 in all dimensions~\cite{dorner_virtual_2019}:
 \begin{equation}
     (x, y, z) \in [-1, 1] \times [-1, 1] \times [-1, 1]
 \end{equation}
-Note that in other implementations, the cube might be defined with $z \in [0, 1]$.
 All coordinates outside this cube are considered outside the view of the camera and subsequently clipped,
 which means they will not be rendered.
+Note that in other implementations, the cube might be defined with $z \in [0, 1]$.
 
 The graphics pipline then uses the NDC and performs the perspective divide,
 which divides the $x$, $y$, and $z$ coordinates by the $w$ coordinate of the homogenous coordinates,
@@ -939,13 +900,13 @@ Prior to detecting the planes, the smartphone has been moved around the scene to
 
 
 
-\section{User Interface of the Mobile Application}
-The application has a simple user interface, consisting of 3 buttons and one label that displays the current status,
-visible in figure~\ref{fig:convex-hull}.
-Capturing depth data will automatically start once tracking is initialized.
-The point cloud is then continuously updated with new depth data on each frame.
-The amount of captured points is displayed in the label.
-The user can then press the "Detect Planes" button to run the RANSAC algorithm on the point cloud.
-Once detection is complete, the detected planes are rendered on the screen.
-Another button allows the user reset the detection results and start over.
-The button on the right side of the screen allows the user to upload the constructed point cloud to a server, as will be discussed in section~\ref{sec:point-cloud-datastructures}.
+%\section{User Interface of the Mobile Application}
+%The application has a simple user interface, consisting of 3 buttons and one label that displays the current status,
+%visible in figure~\ref{fig:convex-hull}.
+%Capturing depth data will automatically start once tracking is initialized.
+%The point cloud is then continuously updated with new depth data on each frame.
+%The amount of captured points is displayed in the label.
+%The user can then press the "Detect Planes" button to run the RANSAC algorithm on the point cloud.
+%Once detection is complete, the detected planes are rendered on the screen.
+%Another button allows the user reset the detection results and start over.
+%The button on the right side of the screen allows the user to upload the constructed point cloud to a server, as will be discussed in section~\ref{sec:point-clouds}.
