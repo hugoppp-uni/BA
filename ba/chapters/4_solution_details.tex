@@ -444,10 +444,11 @@ meaning that the distance between the points and the fitted plane will vary acro
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.35\linewidth]{images/aliasing}
-    \caption{TODO better image, Example of aliasing, distance between the line and cell centers varies across cells}
+    \caption{Example of aliasing, distance between the line and cell centers varies across cells}
     \label{fig:aliasing}
 \end{figure}
 
+% todo better image
 
 \subsubsection{Octree with Neighborhood}
 
@@ -657,7 +658,6 @@ The Vertex Buffer Object (VBO) for the vertices and the Element Buffer Object (E
 Figure~\ref{fig:index-buffer} illustrates the concept of indexing.
 
 \subsubsection{Shaders}\label{subsec:shaders}
-%here
 
 This section provides an overview of shaders and their role in the rendering pipeline as detailed by~\cite{de_vries_learn_2020}.
 
@@ -674,7 +674,12 @@ See figure~\ref{fig:graphics-pipeline} for an overview of the graphics pipeline.
 
 Vertex shaders are executed for each vertex defined in the vertex buffer, which is defined on the CPU and
 passed to the GPU by copying the data to the GPU's memory, e.g.\ by using the \texttt{glBufferData} function.
-This data can contain any attributes of the vertex, such as position, color, texture coordinates, or normals.
+On mobile devices, a separate buffer is often not needed, as Android devices usually only have a unified memory architecture,
+which allows for direct access to memory declared on the CPU from the GPU without copying the data.
+For example, the Pixel 7 is equipped with a proprietary Google Tensor G2 system-on-chip (SoC) Processor with integrated a
+Mali-G710 MP7 GPU\footfullcite{claburn_google_nodate} and 8GB of LPDDR5X RAM\@\footfullcite{noauthor_pixel_nodate}.
+
+The vertex data can contain any attributes of the vertex, such as position, color, texture coordinates, or normals.
 The vertex shader is then executed for each vertex and can be used to transform the vertex position between different coordinate systems,
 or manipulate the vertex attributes on a per-vertex basis.
 To pass data back to the pipeline, the vertex shader can define \texttt{out} variables.
@@ -687,7 +692,7 @@ which range from -1 to 1 in all dimensions~\cite{dorner_virtual_2019}:
 \end{equation}
 All coordinates outside this cube are considered outside the view of the camera and subsequently clipped,
 which means they will not be rendered.
-Note that in other implementations, the cube might be defined with $z \in [0, 1]$.
+Note that in other implementations, the cube might be defined with $z \in [0, 1]$~\cite{dorner_virtual_2019}
 
 The graphics pipline then uses the NDC and performs the perspective divide,
 which divides the $x$, $y$, and $z$ coordinates by the $w$ coordinate of the homogenous coordinates,
@@ -704,7 +709,7 @@ vertex shader can also be accessed in the fragment shader, with their values int
 This allows for smooth color transitions or texture mapping across the primitive.
 Before the final color is written to the framebuffer,
 a depth test is performed to determine if the fragment is visible or covered by fragments from other primitives,
-in which case it is discarded.
+in which case it is discarded.~\cite{de_vries_learn_2020}
 
 
 \subsubsection{Perspective Projection in OpenGL}
@@ -780,10 +785,11 @@ The normalized cross product of two vectors $n$ and $b_{smallest}$ then yields a
     \caption{Most commonly used bounding volumes. Source: \cite{gabriel_zachmann_geometric_2002}}
 \end{figure}
 
-To constrain the planes to the area where the points are located, a bounding volume can be used.
+As surfaces in the real world are not infinite, the planes detected by the RANSAC algorithm should also be constrained to a finite area.
+To achieve this, a bounding volume can be used.
 A bounding volume is a geometric shape that encloses a set of points or other shapes,
 and is often used to simplify collision detection or culling~\cite{gabriel_zachmann_geometric_2002}.
-In this case the bounding volume will be used to generate a mesh that represents the area where the points are located.
+In this case the bounding volume will be used to generate a mesh that represents the plane, constrained to where its points are located.
 Common bounding volumes include axis-aligned bounding boxes (AABB), spheres, or oriented bounding boxes (OBB).
 A more complex bounding volume is the convex hull, which is the smallest convex polygon that contains all the points~\cite{gabriel_zachmann_geometric_2002}.
 A rubber band can be used to illustrate the concept: If a rubber band is stretched around a set of points represented by nails in a board,
@@ -804,12 +810,12 @@ For a more comprehensive overview of available algorithms, see~\cite{de_berg_com
 
 In~\citeyear{graham_efficient_1972}~\cite{graham_efficient_1972} proposed an algorithm to calculate
 the convex hull of $n$ points in $O(n \log n)$ time, the Graham's Scan.
-The Graham scan algorithm begins by selecting the point with the lowest y-coordinate (or the leftmost point in the case of a tie).
+The Graham Scan algorithm begins by selecting the point with the lowest y-coordinate (or the leftmost point in the case of a tie).
 Note that the original paper describes using the center of the points as the starting point,
 but common implementations use the lowest y-coordinate
 ~\footfullcite{noauthor_graham_2024}\multiplefootnoteseparator\footfullcite{noauthor_convex_2013} --
 the core concepts remain the same.
-After selecting the starting points, it then sorts the remaining points in ascending order
+After selecting the starting point, it then sorts the remaining points in ascending order
 of their polar angles relative to the starting point.
 If two points have the same polar angle, only the farthest point is kept.
 Finally, it iteratively considers each point in the sorted order and determines whether it
@@ -854,24 +860,21 @@ It then constructs the upper and lower hulls separately, which are then merged t
 \end{figure}
 
 
-%todo: Explain the algorithm
-
-More recent algorithms like Chan's algorithm~\cite{chan_optimal_1996} combine the graham scan with other techniques to solve the problem in $O(n \log h)$ time,
+More recent algorithms like Chan's algorithm~\cite{chan_optimal_1996} combine the Graham Scan with other techniques to solve the problem in $O(n \log h)$ time,
 where $h$ is the number of points of the convex hull.
 Thus, in case $h$ is much smaller than $n$, these algorithms are faster than the Graham's Scan.
 
 For the purpose of this thesis, the Chan's algorithm would be the most efficient choice,
 as the number of points of the convex hull is expected to be much smaller than the total number of points.
-However, as Chan's algorithm is more complex to implement and the performance of the convex hull algorithm
-is small compared to running the RANSAC algorithm, Andrew's Monotone Chain Algorithm is used here instead.
-
-
+However, as Chan's algorithm is more complex to implement and the performance impact of the convex hull algorithm
+is small compared to running the RANSAC algorithm, Andrew's Monotone Chain Algorithm is used instead.
 
 \subsubsection{Rendering Planes Constrained by the Convex Hull}
 To render a plane constrained by the convex hull,
 a triangle mesh can be created with triangles consisting of two subsequent triangles of the hull vertices and the centroid of the hull as the third vertex each.
 Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm implemented into the application.
 Prior to detecting the planes, the smartphone has been moved around the scene to capture the points from different angles.
+%todo image
 
 \begin{figure}[ht!]
 

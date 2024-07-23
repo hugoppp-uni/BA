@@ -1,8 +1,9 @@
 \chapter{Evaluation}\label{ch:evaluation}
 In this chapter, the individual algorithms, as well as the final performance of the combined system, will be evaluated.
-The depth from motion algorithm will be evaluated based on different materials and their resulting confidence maps in section~\ref{sec:eval-depth-from-motion}.
+First, the depth from motion algorithm will be evaluated based on different materials and their resulting confidence maps in section~\ref{sec:eval-depth-from-motion}.
+Section~\ref{sec:point-clouds} will then evaluate the two point cloud datastructures as described in section~\ref{subsec:inserting-new-points-into-the-point-cloud}.
 In section~\ref{sec:eval-ransac-algorithm}, the RANSAC algorithm will be evaluated based on synthetic data, as well as real world data.
-Finally, in section~\ref{subsec:application-performance-of-full-room-scan}, the application performance will be evaluated on the use case of a full room scan.
+Finally, in section~\ref{sec:application-performance-of-full-room-scan}, the application performance will be evaluated on the use case of a full room scan.
 CloudCompare~\cite{daniel_girardeau-montaut_cloudcompare_nodate}, an open-source tool for working with 3D point clouds, will be used for the evaluation of the point clouds and the RANSAC algorithm.
 %klare begründung => Anforderung erfüllt ja oder nein
 
@@ -106,7 +107,7 @@ In figure~\ref{fig:materials}, the confidence maps of different materials are sh
 \end{figure}
 
 In figure~\ref{fig:material-wall-close} and~\ref{fig:material-wall-far}, the confidence maps of a wall at different distances is shown.
-It is apparent that the confidence of the wall at 1.5m distance is almost completely black, meaning low confidence.
+It is apparent that the confidence map of the wall at 1.5m distance is almost completely black, meaning low confidence.
 This is due to the lack of any texture on the wall at this distance.
 When moving closer to the wall, the structure of the wall becomes more apparent and the confidence increases greatly.
 
@@ -115,11 +116,11 @@ but also has dark sports throughout the map.
 This could be a result of the repetitive pattern of the carpet.
 
 The highest confidence of all tested materials is achieved on a wooden floor, as shown in figure~\ref{fig:material-wood}.
-This can be attributed to the high amount of texture and value variance through the wood, while not being repetitive.
+This can be attributed to the high amount of texture and value variance throughout the wood, while not being repetitive.
 The seams between the wooden planks are also clearly visible.
 
-Figure~\ref{fig:material-leather} shows a leather armchair, which has a high confidence on the seams of the chair and
-on creases of the leather, with low confidence in other areas, where the leather is smoother.
+Figure~\ref{fig:material-leather} shows a leather armchair, which has high confidence on the seams of the chair and
+creases of the leather, with low confidence in other areas, where the leather is smoother.
 A similar pattern is visible on white furniture and bathroom tiles, in figures~\ref{fig:material-whiteFurniture} and~\ref{fig:material-tiles} respectively,
 where the white surface has very low confidence, while the seams between the surfaces have increased confidence.
 The gift paper shown in figure~\ref{fig:material-giftpaper} shows a similar effect, but less pronounced.
@@ -129,7 +130,7 @@ but the striped pattern is still visible in the confidence map, as the stripes t
 These examples show how the amount of texture on a given surface greatly influences the confidence of the depth from motion algorithm, as expected.
 The algorithm performs best on surfaces with high texture, while struggling with low texture surfaces.
 Small repetitive patterns can also lead to low confidence, as visible in the carpet example.
-It is also important to note that the texture captured by the camera itself is important, not the texture of the material itself.
+It is also important to note that the texture captured by the camera is important, not the texture of the material itself.
 This can be seen in the first example of the wall: When capturing from afar, the cameras resolution is too low to capture the texture,
 but when moving closer to the wall, the texture of the wall becomes more apparent and the confidence increases.
 Lighting conditions will also influence the confidence of the algorithm,
@@ -139,7 +140,7 @@ as angled light will create shadows that will increase the texture of the surfac
 This section will evaluate the two point cloud datastructures as described in section~\ref{subsec:inserting-new-points-into-the-point-cloud}.
 To evaluate the datastructures, the point cloud is transferred from the mobile application to a computer using
 a simple HTTP server with a single endpoint, that accepts a file using a POST request and saves it to disk.
-The android application will then stream the point cloud data, serialized as a PLY file, to the server on a push of a button.
+The Android application will then stream the point cloud data, serialized as a PLY file, to the server on a push of a button.
 A PLY file is a simple file format for storing 3D point cloud data in plain text
 and allows for saving custom properties for each vertex, such as the confidence value of the point.
 In all the following images of the point clouds, the confidence value is color-coded,
@@ -212,10 +213,10 @@ The full setup is shown in figure~\ref{fig:test-setup}.
 \subsection{Quantization Octree vs. Epsilon Octree}\label{subsec:quantization-octree-vs.-epsilon-octree}
 
 A point cloud with a resolution of $s=0.005$m or 5mm is captured for both the quantization octree and the epsilon octree.
-The resulting segmented point cloud, the quantization octree has a total of about 90.000 points,
+In the resulting segmented point cloud, the quantization octree has a total of about 90.000 points,
 while the epsilon octree only has about 20.000 points.
 This can be explained due to the quantization octree always ending up with the maximal resolution
-with enough data added, as it is functionally a grid.
+with enough data added, as it is functionally a three-dimensional grid.
 The epsilon octree, on the other hand, will only add points that are within the epsilon threshold of the current point,
 which means that gaps between points are at least epsilon wide, but can be wider.
 For example, if two points almost 2 epsilon apart, no points will be added between them and the gap will be approximately
@@ -225,12 +226,12 @@ To compare the two datastructures, the quantization octree will be used with a l
 which results in a number of points of about 22.000, which is comparable to the epsilon octree at $s=0.005$m.
 
 Figure~\ref{fig:octrees-compairison} shows the raw and segmented point clouds of both datastructures.
-From inspecting the raw point cloud visually, it is apparent that the quantization octree has a higher amount of noise,
-While the cube is easily recognizable in the epsilon octree point cloud, the quantization octree point cloud has a lot of noise around the cube.
+From inspecting the raw point cloud visually, it is apparent that the quantization octree has a higher amount of noise.
+While the cube is easily recognizable in the point cloud of the epsilon octree, the point cloud of the quantization octree has a lot of noise around the cube.
 The quantization octree also has more low-confidence points than the epsilon octree.
 This is due to the quantization octree always adding points to the cloud that fall within the threshold,
 while the epsilon octree only adds / updates points based on a condition that takes the confidence of the point into account
-and ignores points lower confidence points that are close to higher confidence points.
+and ignores lower confidence points that are close to higher confidence points.
 As such, the epsilon octree improves the accuracy of the point cloud when new, higher confidence points are added.
 
 
@@ -269,7 +270,7 @@ Once the point clouds are aligned to the primitive,
 the distance between the points of the point cloud and the primitive box can be calculated using the \textit{Cloud/Mesh Distance} feature in CloudCompare.
 The result of this calculation can be seen in figure~\ref{fig:octrees-compairison-stats}.
 From the histogram, it is apparent that the quantization octree has higher noise than the epsilon octree.
-This can also bee seen in the standard deviation, which is 0.022 for the quantization octree and 0.011
+This can also be seen in the standard deviation, which is 0.022 for the quantization octree and 0.011
 for the epsilon octree.
 This confirms the first suspicion from visual inspection of the point clouds.
 The mean distance is also higher for the quantization octree, with 0.0046 compared to 0.0011 for the epsilon octree.
@@ -278,6 +279,7 @@ If these points were to be used for primitive detection, this would indicate how
 
 These results suggest that the epsilon octree is an improvement over the quantization octree in terms of accuracy,
 both when it comes to the amount of noise and the distance to the real surface.
+As such, the epsilon octree will be used for following evaluations.
 
 \begin{figure}[h!tbp]
     \centering
@@ -372,9 +374,9 @@ As a big problem of depth from motion techniques is the lack of depth informatio
 the resilience to missing data is crucial.
 In figure~\ref{fig:test-missing}, points towards the center of the cubes surfaces have been removed.
 This mimics the structure of real world data from the Depth API,
-as edges are often detected more accurately than surfaces.
-%TODO: citation needed
-To achieve this, points have been removed with an increasing probability based on the
+as edges are often detected more accurately than surfaces,
+as visible in the confidence maps of the bathroom tiles and white furniture in figure~\ref{fig:materials}.
+To simulate this effect, points have been removed with an increasing probability based on the
 quadratic distance to the center of the face the points belongs to.
 
 The algorithm is able to correctly recognize the faces of the cube with a missing level up to 24.
@@ -449,11 +451,12 @@ When combining both noise and missing data, the quality of the detection is much
 In figure~\ref{fig:test-both}, the cube is shown with a noise level of 0.01 and varying missing levels.
 With noise level 0.01 and missing level 6, the cube is still recognized correctly.
 With missing level 12, more than 6 faces are being recognized, but all the points are still assigned to primitives.
-This is explained by the fact that the parameterization of the planes is not accurate enough to fit all the points of the planes.
-Thus, the algorithm only fits a subset of the points to the primitive and will create a new parameterization
+This might be due to the shapes not being recognized as connected shapes,
+which causes the algorithm to only fit the largest connected component of the points and will create a new parameterization
 for the remaining points.
-To achieve results with these conditions, the epsilon parameter had to be increased to 0.015 to achieve any results at all.
-Using a noise level of 0.02 with missing data yields no satisfactory results, even with tweaking the parameters.
+To achieve results with a missing level of 24, the epsilon parameter had to be increased to 0.015 to achieve any results at all.
+As visible from the figure, the cube is not recognized correctly, with only small parts of the cube being recognized.
+When increasing the noise level to 0.02, the algorithm yields no satisfactory results with any missing level, even with tweaking the parameters.
 
 \begin{figure}[ht!]
 
@@ -553,17 +556,18 @@ which will in turn lead to connected shapes not being present and being filtered
 It is therefore difficult to find a parameterization for the algorithm that fits both highly textured and low-textured objects.
 
 
-\subsection{Application Performance}\label{subsec:application-performance-of-full-room-scan}
+\section{Application Performance}\label{sec:application-performance-of-full-room-scan}
 
 This section will evaluate the combined performance of the application, first on the test cube, then on a full room scan.
 
 \subsubsection{Test Cube}
-Figure~\ref{fig:cube-results} shows the results of a scan of the test cube, under the same procedure as in section~\ref{sec:point-clouds}.
+Figure~\ref{fig:cube-results} shows the results of a scan of the test cube under the same procedure as in section~\ref{sec:point-clouds} with varying sample resolution $s$.
 Note that the point cloud is not segmented in the application, thus other planes (namely the floor) are also detected in the background.
+The parameters used aside from $s$ will be discussed after describing the results.
 
 With an epsilon octree resolution of $s=0.015$, one of the faces is merged with points from the stand the cube is placed on.
 Starting with a resolution of $s=0.010$, all the 5 faces are recognized correctly and
-the convex hull algorithm correctly creates a matching polygon for each face, however there are still small gaps between the faces.
+the convex hull algorithm correctly creates a matching polygon for each face, with small gaps between the faces.
 Increasing the resolution further to $s=0.005$ improves the accuracy of the edges of the planes slightly.
 While there are no longer gaps between the faces, some amount of clipping is now visible in the polygons.
 %With the selected parameters, a total of 250.000 points were collected and processed by the RANSAC algorithm in about 20 seconds.
@@ -577,6 +581,7 @@ While there are no longer gaps between the faces, some amount of clipping is now
         \includegraphics[width=0.3\linewidth]{images/cube_015_2}
         \includegraphics[width=0.3\linewidth]{images/cube_015_3}
         \caption{$s=0.015, n\approx60.000$}
+        \label{fig:cube-results-0015}
     \end{subfigure}%
 
     \vspace{0.5em}
@@ -607,9 +612,9 @@ Using a trial-and-error approach, the parameters of the RANSAC algorithm were ad
 performance, the amount of detected planes and noise.
 The final parameters used are:
 \begin{itemize}
-    \item $0.010>s>0.005$ -- The resolution of the epsilon octree.
+    \item $0.010\geq s \geq 0.005$ -- The resolution of the epsilon octree.
     Higher resolutions than 0.005 lead to a significantly higher amount of points and thus worse runtime performance without noticeable improvements in the detection results,
-    while lower resolutions than 0.010 lead to visibly worse results, with outliers having a bigger impact on the detection results, as visible in figure~\ref{fig:cube-results}.
+    while lower resolutions than 0.010 lead to visibly worse results, with outliers having a bigger impact on the detection results, as visible in figure~\ref{fig:cube-results-0015}.
     \item $n=\left(\frac{1}{s}\right)^2\cdot0.15^2=900$ -- The minimum number of points required to fit a primitive.
     Equal to the amount of points on a $15cm^2$ plane, if uniformly sampled with $s$.
     Realistically, this number will be lower, as the points are scattered across the normal of the plane.
@@ -632,7 +637,7 @@ only the resolution of the epsilon octree has to be adjusted.
 As for $\epsilon$, the parameter needs to be adjusted based on the noise level of the data, which might vary based on the device and the lighting conditions.
 
 
-As for runtime performance, the device remains responsive with $\epsilon<0.005$, however the device heats
+As for runtime performance, the device remains responsive with $\epsilon\geq0.005$, however it heats
 up quickly and the application experiences a significant slowdown after a few scans.
 This is due to both the creation of the point cloud using the epsilon octree and the RANSAC algorithm being
 very computationally expensive.
