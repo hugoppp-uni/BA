@@ -441,14 +441,32 @@ it is difficult to choose a fixed resolution that works for all values.
 Quantization might also lead to worse detection results for surface that do not align with the axis of the octree.
 For example, a plane that is tilted by a couple of degrees will lead to aliasing,
 meaning that the distance between the points and the fitted plane will vary across the plane, as demonstrated in figure~\ref{fig:aliasing}.
+\vspace{0.1em}
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.35\linewidth]{images/aliasing}
+    \begin{tikzpicture}[scale=1.50]
+    % Define the size of the grid
+    \def\gridsize{5}
+    % Define the distance between dots
+    \def\dotdist{1}
+
+    % Loop to create the grid with dots
+    \foreach \x in {0,1,...,\gridsize} {
+        \foreach \y in {0,1,...,3} {
+            \fill (\x*\dotdist, \y*\dotdist) circle (1pt);
+        }
+    }
+    \draw[thick, black] (0,0.8) -- (\gridsize*\dotdist, 0.5*\gridsize*\dotdist);
+    \draw[thick, blue] (0.0,1.0) -- (0.0,0.8);
+    \draw[thick, blue] (1.0,1.0) -- (1.0,1.14);
+    \draw[thick, blue] (2.0,1.0) -- (2.0,1.5);
+    \draw[thick, blue] (3.0,2.0) -- (3.0,1.8);
+    \draw[thick, blue] (4.0,2.0) -- (4.0,2.15);
+    \draw[thick, blue] (5.0,3.0) -- (5.0,2.5);
+    \end{tikzpicture}
     \caption{Example of aliasing, distance between the line and cell centers varies across cells}
     \label{fig:aliasing}
 \end{figure}
-
-% todo better image
 
 \subsubsection{Octree with Neighborhood}
 
