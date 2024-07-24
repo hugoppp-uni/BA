@@ -44,10 +44,10 @@ The code of this thesis is integrated into the application and interfaced with K
 The following libraries and/or publicly available code are used in this thesis:
 \begin{itemize}
     \item The RANSAC implementation by \citeauthor{schnabel_efficient_2007} is used for primitive detection
-    and is further examined in this thesis \parencite{schnabel_efficient_2007}
+    and is further examined in this thesis~\parencite{schnabel_efficient_2007}
     \item \citetitle{google_llc_codelab_raw_depth} provides a reference implementation for using the ARCore Raw Depth API\@.
     It is used as a basis for unprojecting depth image pixels into world space in this thesis.~\parencite{google_llc_codelab_raw_depth}
-    \item The monotone chain implementation in C\texttt{++} to compute the convex hull, available on Wikibooks~\footfullcite{noauthor_algorithm_nodate}
+    \item The monotone chain implementation in C\texttt{++} to compute the convex hull available on Wikibooks~\footfullcite{noauthor_algorithm_nodate}
 \end{itemize}
 
 \section{Testing}
@@ -58,3 +58,14 @@ To achieve this, a CMake library target \textit{backend} is defined,
 that contains all functionality of the \texttt{procedural-augmented-reality} project.
 A second target that contains the tests, \textit{backend-test}, is defined,
 which links against \textit{backend} and the Google Test library.
+
+The testing process involves writing individual test cases for each function and class to ensure they
+behave as expected under various conditions.
+For instance, the integrity of the Octree data structure is verified by recursively checking the bounds of
+each node and its children.
+Other tests validate the correct insertion and retrieval of points within the Octree,
+ensuring that nodes are placed in the correct sub-octants.
+Edge cases are also considered, such as testing the behavior of the Octree when searching for points within a radius.
+Additionally, the deletion functionality is extensively tested through various scenarios,
+including deleting nodes from the root and upwards or downwards in the hierarchy.
+
