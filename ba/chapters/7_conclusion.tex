@@ -1,18 +1,18 @@
 \chapter{Conclusion and Outlook}
 
 This thesis introduced a system for detecting primitives in a point cloud generated from depth data obtained from the Google ARCore API.
-The system utilizes a custom octree implementation to efficiently store and update the point cloud information in real time.
-The RANSAC implementation by~\cite{schnabel_efficient_2007}, is employed for plane detection.
-The resulting planes are then used to construct a triangle mesh representing the convex hull,
-which is overlaid on the camera feed.
+The system utilizes a custom octree implementation to efficiently store and update the point cloud information in real time,
+that is then used to detect planes using the RANSAC algorithm.
+The resulting planes are then used to construct a triangle mesh representing their convex hulls,
+which is overlaid onto the camera feed.
 
 %The performance of the algorithms and the overall system is thoroughly discussed in chapter~\ref{ch:evaluation}.
 The system demonstrates high accuracy in detecting planes and constructing meshes for highly textured objects,
 such as the test cube.
-However, the data quality of the Depth API with low-textured objects like walls prove to be a challenge for the system,
+However, the data quality of the Depth API with low-textured objects like white furniture prove to be a challenge for the system,
 as the depth data for these materials contains gaps, resulting in artifacts in the detection results.
 Mitigating these artifacts requires increasing the bitmap resolution, but this approach causes lower-textured materials to go undetected.
-For these reasons, the system is not yet suitable for creating a full mesh-representation of a scene.
+For these reasons, the system is not suitable for creating a full mesh-representation of a scene.
 
 Nevertheless, the system developed in this thesis provides a solid foundation for further research and development in processing depth data from ARCore or similar APIs to create meshes from a scene.
 One major limitation is missing datapoints in the data obtained through the Depth from Motion technique used by ARCore.
@@ -34,7 +34,7 @@ As far as expanding the system, implementing the ability to detect more complex 
 such as cylinders and spheres, would be a logical next step.
 Addressing the issue of data quality also opens up opportunities for further research, such as automatic segmentation,
 classification, and labeling of objects in a scene.
-Another potential area of study is the development of a system that allows objects to be moved during a session.
+%Another potential area of study is the development of a system that allows objects to be moved during a session.
 
 %In conclusion, the system developed in this thesis provides a robust foundation for building point clouds
 %and detecting primitives in data obtained from the Google ARCore Depth API.
