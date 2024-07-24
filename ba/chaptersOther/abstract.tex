@@ -1,12 +1,5 @@
 
 \section*{Abstract}
-%This thesis introduces a system for detecting primitives in a point cloud generated
-%from depth data obtained from a smartphone lacking specialized depth sensing hardware, using the Google ARCore API\@.
-%The system utilizes a custom octree implementation to efficiently store and update the point cloud information in real time.
-%The RANSAC implementation by~\cite{schnabel_efficient_2007}, is employed to detect primitives in the point cloud.
-%The resulting primitive parameterizations are then used to construct a triangle mesh of the convex hull of the primitives,
-%which is finally overlaid on the camera feed.
-%
 This thesis presents a system that detects geometric primitive in the user's surroundings on mobile devices without specialized depth-sensing hardware.
 The system utilizes depth data from the Google ARCore Depth API to create a point cloud.
 To efficiently store and update the point cloud information in real-time, a custom octree implementation is employed.
@@ -15,14 +8,18 @@ The resulting parameterizations of the primitives are used to generate triangle 
 These meshes are finally rendered and overlayed onto the camera feed, accessible to the user through an
 Augmented Reality (AR) application.
 
+\selectlanguage{german}
+\section*{Kurzfassung}
+Diese Arbeit stellt ein System vor, das geometrische Primitive in der Umgebung des Nutzers auf mobilen Geräten ohne spezialisierte Tiefensensor-Hardware erkennt.
+Das System nutzt Tiefendaten von der Google ARCore Depth API, um eine Punktwolke zu erstellen.
+Um die Punktwolkeninformationen effizient in Echtzeit zu speichern und zu aktualisieren,
+wird eine eigens entwickelte Octree-Implementierung verwendet.
+Primitive werden innerhalb der Punktwolke mithilfe der RANSAC-Implementierung von~\cite{schnabel_efficient_2007} erkannt.
+Die resultierenden Parametrisierungen der Primitive werden verwendet, um Dreiecksnetze ihrer konvexen Hüllen zu erzeugen.
+Diese Netze werden schließlich gerendert und in Echtzeit auf das Kamerabild überlagert,
+sodass der Nutzer sie in einer Augmented Reality (AR) Anwendung sehen kann.
+\selectlanguage{english}
 
-
-%This thesis aims to detect geometric primitives, such as planes, spheres, and cylinders,
-%within three-dimensional data obtained from mobile devices.
-%The primary objective is to generate a 3D mesh of an interior space, which encompasses furniture and other objects.
-%An additional (optional) objective may involve the detection and categorization of these objects.
-%Depth information from the Google ARCore SDK, which does not require specialized depth-sensing hardware, will be used.
-%
 
 
 \paragraph*{Keywords}

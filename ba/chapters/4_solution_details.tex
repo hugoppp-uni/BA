@@ -925,14 +925,14 @@ of the hull and the centroid of the hull as the third vertex each, as shown in f
         }
 
     \end{tikzpicture}
-    \caption{Triangle mesh for convex hull polygon with 7 vertecies.}
+    \caption{Triangle mesh for convex hull polygon with 7 vertecies using centroid}
     \label{fig:convex-hull-mesh}
 \end{figure}
 
 Figure~\ref{fig:convex-hull} shows the result of the convex hull algorithm implemented into the application.
 Prior to detecting the planes, the smartphone has been moved around the scene to capture the points from different angles.
 
-\begin{figure}[ht!]
+\begin{figure}[h!tp]
 
     \centering
     \begin{subfigure}[b]{0.4\textwidth}
@@ -957,6 +957,8 @@ Prior to detecting the planes, the smartphone has been moved around the scene to
     \label{fig:convex-hull}
 \end{figure}
 
+To make it easier to distinguish between different planes when detecting multiple planes, as will be shown in the evaluation,
+section~\ref{sec:application-performance}, the planes are rendered in random colors by assigning a color vertex attribute to each vertex of a plane.
 
 %\section{User Interface of the Mobile Application}
 %The application has a simple user interface, consisting of 3 buttons and one label that displays the current status,
