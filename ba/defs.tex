@@ -84,10 +84,20 @@
 % typographisch anspruchsvolle Tabellen; siehe chap3.tex
 \usepackage{booktabs}
 
+
+
+
 % zum Erstellen des Literaturverzeichnisses; der gängige Stil APA ist hier
 % bereits eingestellt
 \usepackage[style=alphabetic, doi=false,isbn=false,url=false,eprint=false]{biblatex}
 
+\DeclareBibliographyCategory{inbib}
+\makeatletter
+\AtEveryCitekey{%
+    \ifcsstring{blx@delimcontext}{fullcite}
+    {}
+    {\addtocategory{inbib}{\thefield{entrykey}}}}
+\makeatother
 % eine Beispieldatei für ein Literaturverzeichnis
 \addbibresource{ba.bib}
 
